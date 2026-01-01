@@ -18,7 +18,14 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Habit & Time Tracker",
-  description: "Track your habits and time efficiently",
+  description: "Track your habits and time efficiently. A modern productivity app to build better habits and manage your time.",
+  keywords: ["habit tracker", "time tracking", "productivity", "pomodoro", "time management"],
+  authors: [{ name: "Dipanjan" }],
+  openGraph: {
+    title: "Habit & Time Tracker",
+    description: "Track your habits and time efficiently. Build better habits and manage your time.",
+    type: "website",
+  },
 };
 
 export default function RootLayout({

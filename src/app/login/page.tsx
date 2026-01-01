@@ -43,8 +43,8 @@ export default function LoginPage() {
                 router.refresh()
                 router.push('/track-time')
             }
-        } catch (err: any) {
-            setError(err.message)
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'An error occurred')
         } finally {
             setLoading(false)
         }
@@ -62,8 +62,8 @@ export default function LoginPage() {
                 },
             })
             if (error) throw error
-        } catch (err: any) {
-            setError(err.message)
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'An error occurred')
             setLoading(false)
         }
     }
