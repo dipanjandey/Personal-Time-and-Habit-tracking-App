@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Time Tracker Wireframe - Option 3: Hybrid Smart Entry</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Comic Sans MS', 'Marker Felt', cursive;
+            background: #f5f5f5;
+            color: #333;
+        }
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            background: #fff;
+            border-right: 3px solid #333;
+            padding: 24px 16px;
+        }
+        .logo {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 32px;
+            padding: 12px;
+            border: 2px solid #333;
+            background: #e0e0e0;
+        }
+        .nav-item {
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            border: 2px solid #333;
+            background: #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .nav-item.active {
+            background: #333;
+            color: #fff;
+        }
+        
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            padding: 32px;
+            overflow-x: auto;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+            padding-bottom: 16px;
+            border-bottom: 3px solid #333;
+        }
+        .header h1 {
+            font-size: 32px;
+        }
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+        
+        /* Floating Quick Add Button - NEW COMPONENT */
+        .floating-timer {
+            position: fixed;
+            top: 100px;
+            right: 32px;
+            background: #fff;
+            border: 3px solid #333;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            width: 280px;
+            z-index: 100;
+        }
+        .floating-timer h4 {
+            font-size: 14px;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        .timer-display-large {
+            font-size: 36px;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+            text-align: center;
+            padding: 16px;
+            background: #f0f8ff;
+            border: 2px solid #333;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+        .timer-controls {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .timer-meta {
+            font-size: 12px;
+            color: #666;
+            padding: 8px;
+            background: #f9f9f9;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        /* Compact entry bar */
+        .compact-entry-bar {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            border: 3px solid #333;
+            border-radius: 8px;
+            padding: 16px 20px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #fff;
+        }
+        .compact-entry-bar input,
+        .compact-entry-bar select {
+            padding: 10px;
+            border: 2px solid #333;
+            background: #fff;
+            font-family: 'Comic Sans MS', cursive;
+            font-size: 13px;
+            border-radius: 4px;
+            flex: 1;
+            min-width: 100px;
+        }
+        .compact-entry-bar button {
+            padding: 10px 20px;
+            white-space: nowrap;
+        }
+        
+        /* Table with inline edit toggle */
+        .table-container {
+            background: #fff;
+            border: 3px solid #333;
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .view-toggle {
+            display: flex;
+            gap: 0;
+            border: 2px solid #333;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .view-toggle button {
+            padding: 8px 16px;
+            border: none;
+            background: #fff;
+            font-family: 'Comic Sans MS', cursive;
+            font-size: 13px;
+            cursor: pointer;
+            border-right: 2px solid #333;
+        }
+        .view-toggle button:last-child {
+            border-right: none;
+        }
+        .view-toggle button.active {
+            background: #333;
+            color: #fff;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 8px;
+        }
+        th {
+            text-align: left;
+            padding: 12px 16px;
+            background: #e0e0e0;
+            border: 2px solid #333;
+            font-size: 14px;
+        }
+        th:first-child {
+            border-radius: 4px 0 0 4px;
+        }
+        th:last-child {
+            border-radius: 0 4px 4px 0;
+        }
+        
+        /* Row with click-to-edit */
+        .table-row {
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .table-row td {
+            padding: 20px 16px;
+            background: #fff;
+            border: 2px solid #333;
+        }
+        .table-row:hover td {
+            background: #f0f8ff;
+        }
+        .table-row.editing td {
+            background: #ffffcc;
+            border-color: #667eea;
+            border-width: 3px;
+        }
+        .table-row td:first-child {
+            border-radius: 4px 0 0 4px;
+        }
+        .table-row td:last-child {
+            border-radius: 0 4px 4px 0;
+        }
+        
+        /* Editable cell */
+        .cell-content {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .edit-input, .edit-select {
+            width: 100%;
+            padding: 8px;
+            border: 2px solid #999;
+            background: #fff;
+            font-family: 'Comic Sans MS', cursive;
+            font-size: 13px;
+        }
+        
+        /* Button styles */
+        .btn {
+            padding: 12px 24px;
+            border: 2px solid #333;
+            background: #fff;
+            cursor: pointer;
+            font-family: 'Comic Sans MS', cursive;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 4px;
+        }
+        .btn:hover {
+            background: #e0e0e0;
+        }
+        .btn-primary {
+            background: #333;
+            color: #fff;
+        }
+        .btn-success {
+            background: #4caf50;
+            color: #fff;
+        }
+        .btn-sm {
+            padding: 8px 16px;
+            font-size: 12px;
+        }
+        
+        /* Badge */
+        .badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border: 2px solid #333;
+            background: #e0e0e0;
+            font-size: 12px;
+            border-radius: 4px;
+        }
+        .badge-blue { background: #667eea; color: #fff; }
+        .badge-green { background: #4caf50; color: #fff; }
+        .badge-purple { background: #9c27b0; color: #fff; }
+        
+        /* Summary cards */
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .summary-card {
+            background: #fff;
+            border: 3px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        .summary-card h3 {
+            font-size: 14px;
+            margin-bottom: 8px;
+            color: #666;
+        }
+        .summary-card .value {
+            font-size: 28px;
+            font-weight: bold;
+        }
+        
+        /* Icons */
+        .icon {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid currentColor;
+            background: currentColor;
+            opacity: 0.3;
+        }
+        
+        .duration {
+            font-weight: bold;
+            color: #333;
+            font-size: 16px;
+        }
+        
+        /* Edit mode indicator */
+        .edit-mode-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            background: #ffffcc;
+            border: 2px solid #333;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- REUSABLE: Sidebar -->
+        <div class="sidebar">
+            <div class="logo">⏱️ Habit & Time Tracker</div>
+            
+            <div class="nav-item active">
+                <span class="icon"></span>
+                <span>Track Time</span>
+            </div>
+            <div class="nav-item">
+                <span class="icon"></span>
+                <span>Configure</span>
+            </div>
+            <div class="nav-item">
+                <span class="icon"></span>
+                <span>Analytics</span>
+            </div>
+            <div class="nav-item">
+                <span class="icon"></span>
+                <span>Reports</span>
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <!-- Header -->
+            <div class="header">
+                <h1>Track Time</h1>
+                <div class="header-actions">
+                    <button class="btn">🔍 Search</button>
+                    <button class="btn">📊 Export</button>
+                </div>
+            </div>
+            
+            <!-- Summary Cards -->
+            <div class="summary-cards">
+                <div class="summary-card">
+                    <h3>TODAY'S TIME</h3>
+                    <div class="value">6h 45m</div>
+                </div>
+                <div class="summary-card">
+                    <h3>THIS WEEK</h3>
+                    <div class="value">33h 20m</div>
+                </div>
+                <div class="summary-card">
+                    <h3>POMODOROS</h3>
+                    <div class="value">12</div>
+                </div>
+                <div class="summary-card">
+                    <h3>ENTRIES</h3>
+                    <div class="value">24</div>
+                </div>
+            </div>
+            
+            <!-- NEW COMPONENT: Compact Quick Entry Bar -->
+            <div class="compact-entry-bar">
+                <span style="font-weight: bold; white-space: nowrap;">⚡ Quick Add:</span>
+                <input type="time" value="14:00">
+                <input type="time" value="15:30">
+                <select>
+                    <option>Product - testing</option>
+                    <option>GTM - demos</option>
+                    <option>Coding</option>
+                </select>
+                <select>
+                    <option>Self work</option>
+                    <option>Meetings</option>
+                </select>
+                <input type="number" value="2" style="width: 70px;">
+                <input type="text" placeholder="Comments..." style="flex: 2;">
+                <button class="btn btn-primary">➕ Add</button>
+            </div>
+            
+            <!-- Table with Smart Editing -->
+            <div class="table-container">
+                <div class="table-header">
+                    <div style="display: flex; align-items: center; gap: 16px;">
+                        <h2>Time Entries</h2>
+                        <span class="edit-mode-badge">✏️ Click any row to edit</span>
+                    </div>
+                    <div style="display: flex; gap: 12px; align-items: center;">
+                        <!-- NEW COMPONENT: View toggle -->
+                        <div class="view-toggle">
+                            <button class="active">📋 Table</button>
+                            <button>📇 Cards</button>
+                            <button>📊 Timeline</button>
+                        </div>
+                        <select style="padding: 8px; border: 2px solid #333; border-radius: 4px;">
+                            <option>📅 Today</option>
+                            <option>This Week</option>
+                            <option>This Month</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Time Range</th>
+                            <th>Work Area</th>
+                            <th>Work Type</th>
+                            <th style="text-align: center;">🍅</th>
+                            <th>Comments</th>
+                            <th>Duration</th>
+                            <th>Quick Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Normal row (hover to see edit hint) -->
+                        <tr class="table-row">
+                            <td>
+                                <div class="cell-content">
+                                    <strong>09:00 - 10:30</strong><br>
+                                    <span style="font-size: 11px; color: #666;">Click to edit</span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge badge-blue">GTM - demos</span>
+                            </td>
+                            <td>Meetings - External</td>
+                            <td style="text-align: center;">
+                                <span class="badge badge-green">3</span>
+                            </td>
+                            <td>Client demo session</td>
+                            <td><span class="duration">1h 30m</span></td>
+                            <td>
+                                <button class="btn btn-sm">💾</button>
+                                <button class="btn btn-sm">🗑️</button>
+                            </td>
+                        </tr>
+                        
+                        <!-- Editing row (currently in edit mode) -->
+                        <tr class="table-row editing">
+                            <td>
+                                <div style="display: flex; gap: 8px;">
+                                    <input type="time" class="edit-input" value="08:00" style="width: 90px;">
+                                    <input type="time" class="edit-input" value="09:00" style="width: 90px;">
+                                </div>
+                            </td>
+                            <td>
+                                <select class="edit-select">
+                                    <option selected>Product - testing</option>
+                                    <option>GTM - demos</option>
+                                    <option>Coding</option>
+                                </select>
+                            </td>
+                            <td>
+                                <select class="edit-select">
+                                    <option selected>Self work</option>
+                                    <option>Meetings - Internal</option>
+                                </select>
+                            </td>
+                            <td>
+                                <input type="number" class="edit-input" value="2" min="0" style="width: 60px;">
+                            </td>
+                            <td>
+                                <input type="text" class="edit-input" value="Sprint planning">
+                            </td>
+                            <td><span class="duration">1h 00m</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-success">✓ Save</button>
+                                <button class="btn btn-sm">✕</button>
+                            </td>
+                        </tr>
+                        
+                        <!-- Normal row -->
+                        <tr class="table-row">
+                            <td>
+                                <div class="cell-content">
+                                    <strong>11:00 - 12:15</strong>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge badge-purple">Coding</span>
+                            </td>
+                            <td>Self work - w Pomodoro</td>
+                            <td style="text-align: center;">
+                                <span class="badge badge-green">2</span>
+                            </td>
+                            <td>Feature development</td>
+                            <td><span class="duration">1h 15m</span></td>
+                            <td>
+                                <button class="btn btn-sm">💾</button>
+                                <button class="btn btn-sm">🗑️</button>
+                            </td>
+                        </tr>
+                        
+                        <!-- Normal row -->
+                        <tr class="table-row">
+                            <td>
+                                <div class="cell-content">
+                                    <strong>14:00 - 16:30</strong>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge badge-blue">GTM - marketing</span>
+                            </td>
+                            <td>Meetings - Internal</td>
+                            <td style="text-align: center;">
+                                <span class="badge">4</span>
+                            </td>
+                            <td>Marketing strategy session</td>
+                            <td><span class="duration">2h 30m</span></td>
+                            <td>
+                                <button class="btn btn-sm">💾</button>
+                                <button class="btn btn-sm">🗑️</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <div style="margin-top: 16px; padding-top: 16px; border-top: 2px solid #e0e0e0; display: flex; justify-content: space-between; align-items: center;">
+                    <div style="font-size: 13px; color: #666;">
+                        💡 <strong>Tip:</strong> Click any row to edit inline, or use quick add bar above
+                    </div>
+                    <div style="font-weight: bold; font-size: 18px;">
+                        Total: 6h 15m
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- NEW COMPONENT: Floating Timer Widget -->
+    <!-- REUSABLE: Card-based widget with Timer controls -->
+    <div class="floating-timer">
+        <h4>⏱️ Active Timer</h4>
+        <div class="timer-display-large">02:34:18</div>
+        <div class="timer-controls">
+            <button class="btn btn-sm" style="flex: 1;">⏸️ Pause</button>
+            <button class="btn btn-sm btn-success" style="flex: 1;">⏹️ Stop</button>
+        </div>
+        <div class="timer-meta">
+            <div style="margin-bottom: 4px;"><strong>Activity:</strong> Coding</div>
+            <div style="margin-bottom: 4px;"><strong>Type:</strong> Self work</div>
+            <div><strong>Started:</strong> 14:00</div>
+        </div>
+    </div>
+    
+    <div style="position: fixed; bottom: 16px; right: 16px; background: #fff; border: 3px solid #333; padding: 16px; border-radius: 8px; max-width: 320px;">
+        <h3 style="margin-bottom: 8px; font-size: 16px;">Option 3: Hybrid Smart Entry</h3>
+        <p style="font-size: 13px; color: #666;">
+            ✅ Compact quick-add bar for speed<br>
+            ✅ Click-to-edit rows (Excel-like)<br>
+            ✅ Floating timer widget<br>
+            ✅ View toggle (table/cards/timeline)<br>
+            ✅ Best of both worlds!
+        </p>
+    </div>
+</body>
+</html>

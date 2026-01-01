@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Time Tracker Wireframe - Option 1: Classic Table with Inline Editing</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Comic Sans MS', 'Marker Felt', cursive;
+            background: #f5f5f5;
+            color: #333;
+        }
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            background: #fff;
+            border-right: 3px solid #333;
+            padding: 24px 16px;
+        }
+        .logo {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 32px;
+            padding: 12px;
+            border: 2px solid #333;
+            background: #e0e0e0;
+        }
+        .nav-item {
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            border: 2px solid #333;
+            background: #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .nav-item.active {
+            background: #333;
+            color: #fff;
+        }
+        .nav-item:hover {
+            background: #e0e0e0;
+        }
+        .nav-item.active:hover {
+            background: #555;
+        }
+        
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            padding: 32px;
+            overflow-x: auto;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+            padding-bottom: 16px;
+            border-bottom: 3px solid #333;
+        }
+        .header h1 {
+            font-size: 32px;
+        }
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+        
+        /* Table */
+        .table-container {
+            background: #fff;
+            border: 3px solid #333;
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .filters {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 8px;
+        }
+        th {
+            text-align: left;
+            padding: 12px 16px;
+            background: #e0e0e0;
+            border: 2px solid #333;
+            font-size: 14px;
+        }
+        th:first-child {
+            border-radius: 4px 0 0 4px;
+        }
+        th:last-child {
+            border-radius: 0 4px 4px 0;
+        }
+        td {
+            padding: 16px;
+            background: #fff;
+            border: 2px solid #333;
+            position: relative;
+        }
+        tr {
+            background: #fff;
+        }
+        tr:hover td {
+            background: #f9f9f9;
+        }
+        td:first-child {
+            border-radius: 4px 0 0 4px;
+        }
+        td:last-child {
+            border-radius: 0 4px 4px 0;
+        }
+        
+        /* Input elements in table */
+        .table-input, .table-select {
+            width: 100%;
+            padding: 8px;
+            border: 2px solid #999;
+            background: #fff;
+            font-family: 'Comic Sans MS', cursive;
+            font-size: 13px;
+        }
+        .table-input:focus, .table-select:focus {
+            border-color: #333;
+            outline: none;
+            background: #ffffcc;
+        }
+        
+        /* Button styles */
+        .btn {
+            padding: 10px 20px;
+            border: 2px solid #333;
+            background: #fff;
+            cursor: pointer;
+            font-family: 'Comic Sans MS', cursive;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .btn:hover {
+            background: #e0e0e0;
+        }
+        .btn-primary {
+            background: #333;
+            color: #fff;
+        }
+        .btn-primary:hover {
+            background: #555;
+        }
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+        
+        /* Badge */
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border: 2px solid #333;
+            background: #e0e0e0;
+            font-size: 11px;
+            border-radius: 4px;
+        }
+        
+        /* Summary cards */
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .summary-card {
+            background: #fff;
+            border: 3px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        .summary-card h3 {
+            font-size: 14px;
+            margin-bottom: 8px;
+            color: #666;
+        }
+        .summary-card .value {
+            font-size: 28px;
+            font-weight: bold;
+        }
+        
+        /* Icons placeholder */
+        .icon {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #333;
+            background: #e0e0e0;
+        }
+        
+        /* Duration column */
+        .duration {
+            font-weight: bold;
+            color: #333;
+        }
+        
+        /* Action buttons in table */
+        .action-btns {
+            display: flex;
+            gap: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- REUSABLE: Sidebar from @/components/ui/sidebar -->
+        <div class="sidebar">
+            <div class="logo">⏱️ Habit & Time Tracker</div>
+            
+            <!-- REUSABLE: Navigation menu items using Button component -->
+            <div class="nav-item active">
+                <span class="icon"></span>
+                <span>Track Time</span>
+            </div>
+            <div class="nav-item">
+                <span class="icon"></span>
+                <span>Configure</span>
+            </div>
+            <div class="nav-item">
+                <span class="icon"></span>
+                <span>Analytics</span>
+            </div>
+            <div class="nav-item">
+                <span class="icon"></span>
+                <span>Reports</span>
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <!-- Header -->
+            <div class="header">
+                <h1>Track Time</h1>
+                <div class="header-actions">
+                    <!-- REUSABLE: Button from @/components/ui/button -->
+                    <button class="btn">🔍 Search</button>
+                    <button class="btn">📊 Export</button>
+                    <button class="btn btn-primary">+ Add Entry</button>
+                </div>
+            </div>
+            
+            <!-- Summary Cards -->
+            <!-- REUSABLE: Card from @/components/ui/card -->
+            <div class="summary-cards">
+                <div class="summary-card">
+                    <h3>TODAY'S TIME</h3>
+                    <div class="value">6h 45m</div>
+                </div>
+                <div class="summary-card">
+                    <h3>THIS WEEK</h3>
+                    <div class="value">33h 20m</div>
+                </div>
+                <div class="summary-card">
+                    <h3>POMODOROS</h3>
+                    <div class="value">12</div>
+                </div>
+                <div class="summary-card">
+                    <h3>ENTRIES</h3>
+                    <div class="value">24</div>
+                </div>
+            </div>
+            
+            <!-- Time Entries Table -->
+            <div class="table-container">
+                <div class="table-header">
+                    <h2>Time Entries</h2>
+                    <div class="filters">
+                        <!-- REUSABLE: Select from @/components/ui/select -->
+                        <select class="table-select" style="width: 150px;">
+                            <option>📅 Today</option>
+                            <option>This Week</option>
+                            <option>This Month</option>
+                            <option>Custom Range</option>
+                        </select>
+                        <!-- REUSABLE: Input from @/components/ui/input -->
+                        <input type="text" class="table-input" placeholder="🔍 Search..." style="width: 200px;">
+                    </div>
+                </div>
+                
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Work Area</th>
+                            <th>Work Type</th>
+                            <th>Pomodoros</th>
+                            <th>Comments</th>
+                            <th>Duration</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Row 1 - Editable -->
+                        <tr>
+                            <td>
+                                <!-- REUSABLE: Input with time picker -->
+                                <input type="time" class="table-input" value="08:00">
+                            </td>
+                            <td>
+                                <input type="time" class="table-input" value="09:00">
+                            </td>
+                            <td>
+                                <!-- REUSABLE: Select from @/components/ui/select -->
+                                <select class="table-select">
+                                    <option>Product - testing</option>
+                                    <option>GTM - demos</option>
+                                    <option>Coding</option>
+                                </select>
+                            </td>
+                            <td>
+                                <select class="table-select">
+                                    <option>Self work</option>
+                                    <option>Meetings - Internal</option>
+                                    <option>Meetings - External</option>
+                                </select>
+                            </td>
+                            <td>
+                                <input type="number" class="table-input" value="2" min="0">
+                            </td>
+                            <td>
+                                <input type="text" class="table-input" placeholder="Add comments..." value="Sprint planning">
+                            </td>
+                            <td>
+                                <span class="duration">1:00</span>
+                            </td>
+                            <td>
+                                <div class="action-btns">
+                                    <!-- REUSABLE: Button with icon -->
+                                    <button class="btn btn-sm">💾</button>
+                                    <button class="btn btn-sm">🗑️</button>
+                                </div>
+                            </td>
+                        </tr>
+                        
+                        <!-- Row 2 -->
+                        <tr>
+                            <td><input type="time" class="table-input" value="09:00"></td>
+                            <td><input type="time" class="table-input" value="10:30"></td>
+                            <td>
+                                <select class="table-select">
+                                    <option>GTM - demos & reachouts</option>
+                                </select>
+                            </td>
+                            <td>
+                                <select class="table-select">
+                                    <option>Meetings - External</option>
+                                </select>
+                            </td>
+                            <td><input type="number" class="table-input" value="3"></td>
+                            <td><input type="text" class="table-input" value="Client demo"></td>
+                            <td><span class="duration">1:30</span></td>
+                            <td>
+                                <div class="action-btns">
+                                    <button class="btn btn-sm">💾</button>
+                                    <button class="btn btn-sm">🗑️</button>
+                                </div>
+                            </td>
+                        </tr>
+                        
+                        <!-- Row 3 -->
+                        <tr>
+                            <td><input type="time" class="table-input" value="11:00"></td>
+                            <td><input type="time" class="table-input" value="12:00"></td>
+                            <td>
+                                <select class="table-select">
+                                    <option>Coding</option>
+                                </select>
+                            </td>
+                            <td>
+                                <select class="table-select">
+                                    <option>Self work - w Pomodoro</option>
+                                </select>
+                            </td>
+                            <td><input type="number" class="table-input" value="2"></td>
+                            <td><input type="text" class="table-input" value="Feature development"></td>
+                            <td><span class="duration">1:00</span></td>
+                            <td>
+                                <div class="action-btns">
+                                    <button class="btn btn-sm">💾</button>
+                                    <button class="btn btn-sm">🗑️</button>
+                                </div>
+                            </td>
+                        </tr>
+                        
+                        <!-- Empty row for new entry -->
+                        <tr style="background: #f0f8ff;">
+                            <td><input type="time" class="table-input" placeholder="--:--"></td>
+                            <td><input type="time" class="table-input" placeholder="--:--"></td>
+                            <td>
+                                <select class="table-select">
+                                    <option value="">Select area...</option>
+                                    <option>Product - testing</option>
+                                    <option>GTM - demos</option>
+                                    <option>Coding</option>
+                                </select>
+                            </td>
+                            <td>
+                                <select class="table-select">
+                                    <option value="">Select type...</option>
+                                    <option>Self work</option>
+                                    <option>Meetings - Internal</option>
+                                </select>
+                            </td>
+                            <td><input type="number" class="table-input" placeholder="0"></td>
+                            <td><input type="text" class="table-input" placeholder="Comments..."></td>
+                            <td><span class="duration">--:--</span></td>
+                            <td>
+                                <div class="action-btns">
+                                    <button class="btn btn-sm btn-primary">➕</button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <div style="margin-top: 16px; text-align: right; color: #666;">
+                    <strong>Total Duration: 3h 30m</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div style="position: fixed; bottom: 16px; right: 16px; background: #fff; border: 3px solid #333; padding: 16px; border-radius: 8px; max-width: 300px;">
+        <h3 style="margin-bottom: 8px; font-size: 16px;">Option 1: Classic Inline Table</h3>
+        <p style="font-size: 13px; color: #666;">
+            ✅ Excel-like inline editing<br>
+            ✅ Spacious layout with breathing room<br>
+            ✅ Direct cell editing (click to edit)<br>
+            ✅ New entry row at bottom<br>
+            ✅ Summary cards for quick insights
+        </p>
+    </div>
+</body>
+</html>
