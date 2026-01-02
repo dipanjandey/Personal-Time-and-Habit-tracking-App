@@ -8,34 +8,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { TimeInput } from '@/components/ui/time-input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useTimeTrackingStore } from '@/store/time-tracking-store'
+import { useConfigStore } from '@/store/config-store'
 import { calculateDuration, getCurrentTime, getTodayDate } from '@/lib/time-utils'
-
-const workAreas = [
-  'Product - testing & usage',
-  'Product - spec, design & research',
-  'Product - project management',
-  'GTM - demos & reachouts',
-  'GTM - research & planning',
-  'GTM - marketing',
-  'GTM - product marketing',
-  'GTM - others',
-  'Coding',
-  'Work Planning',
-  'Finance, ops & investors',
-  'Cofounder/ office time',
-  'Ineffective',
-  'across areas',
-]
-
-const workTypes = [
-  'Self work - w Pomodoro',
-  'Self work',
-  'Meetings - Internal',
-  'Meetings - External',
-  'Email, chat & call',
-  'Multiple work types',
-  'Others',
-]
 
 export function QuickEntryBar() {
   const [startTime, setStartTime] = useState(getCurrentTime())
@@ -48,6 +22,13 @@ export function QuickEntryBar() {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const { addEntry } = useTimeTrackingStore()
+  const { workAreas, workTypes, loadWorkAreas, loadWorkTypes } = useConfigStore()
+
+  // Load work areas and types on mount
+  useEffect(() => {
+    loadWorkAreas()
+    loadWorkTypes()
+  }, [loadWorkAreas, loadWorkTypes])
 
   // Auto-expand textarea based on content
   useEffect(() => {
@@ -135,8 +116,8 @@ export function QuickEntryBar() {
             </SelectTrigger>
             <SelectContent>
               {workAreas.map((area) => (
-                <SelectItem key={area} value={area}>
-                  {area}
+                <SelectItem key={area.id} value={area.name}>
+                  {area.name}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -153,8 +134,8 @@ export function QuickEntryBar() {
             </SelectTrigger>
             <SelectContent>
               {workTypes.map((type) => (
-                <SelectItem key={type} value={type}>
-                  {type}
+                <SelectItem key={type.id} value={type.name}>
+                  {type.name}
                 </SelectItem>
               ))}
             </SelectContent>
