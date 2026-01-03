@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import {
   useReactTable,
   getCoreRowModel,
@@ -16,27 +16,125 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
+import { Combobox } from '@/components/ui/combobox'
 import { useTimeTrackingStore } from '@/store/time-tracking-store'
-import { calculateDuration, formatDuration } from '@/lib/time-utils'
+import { useConfigStore } from '@/store/config-store'
+import { calculateDuration, formatDuration, getTodayDate } from '@/lib/time-utils'
 import type { TimeEntry } from '@/types/time-tracking'
 
-const workAreas = [
-  'Product - testing & usage',
-  'Product - spec, design & research',
-  'Product - project management',
-  'GTM - demos & reachouts',
-  'GTM - research & planning',
-  'GTM - marketing',
-  'Coding',
-]
+// Helper functions for date/time formatting and validation
+const formatDateTimeForDisplay = (datetime: string, fallbackDate?: string): string => {
+  const monthNames = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
+  
+  if (datetime && datetime.includes(' ')) {
+    const [date, time] = datetime.split(' ')
+    const d = new Date(date + 'T00:00:00')
+    const monthName = monthNames[d.getMonth()]
+    const day = d.getDate().toString().padStart(2, '0')
+    
+    const [hours, minutes] = time.split(':')
+    const hourNum = parseInt(hours, 10)
+    const period = hourNum >= 12 ? 'pm' : 'am'
+    const hour12 = hourNum === 0 ? 12 : hourNum > 12 ? hourNum - 12 : hourNum
+    
+    return `${monthName} ${day}, ${hour12}:${minutes} ${period}`
+  }
+  
+  if (datetime && fallbackDate) {
+    const d = new Date(fallbackDate + 'T00:00:00')
+    const monthName = monthNames[d.getMonth()]
+    const day = d.getDate().toString().padStart(2, '0')
+    
+    const [hours, minutes] = datetime.split(':')
+    const hourNum = parseInt(hours, 10)
+    const period = hourNum >= 12 ? 'pm' : 'am'
+    const hour12 = hourNum === 0 ? 12 : hourNum > 12 ? hourNum - 12 : hourNum
+    
+    return `${monthName} ${day}, ${hour12}:${minutes} ${period}`
+  }
+  
+  return datetime
+}
 
-const workTypes = [
-  'Self work - w Pomodoro',
-  'Self work',
-  'Meetings - Internal',
-  'Meetings - External',
-  'Multiple work types',
-]
+const formatDateTimeForEdit = (datetime: string, fallbackDate?: string): string => {
+  if (datetime && datetime.includes(' ')) {
+    const [date, time] = datetime.split(' ')
+    const d = new Date(date + 'T00:00:00')
+    const month = (d.getMonth() + 1).toString().padStart(2, '0')
+    const day = d.getDate().toString().padStart(2, '0')
+    const year = d.getFullYear()
+    
+    const [hours, minutes] = time.split(':')
+    const hourNum = parseInt(hours, 10)
+    const period = hourNum >= 12 ? 'pm' : 'am'
+    const hour12 = hourNum === 0 ? 12 : hourNum > 12 ? hourNum - 12 : hourNum
+    
+    return `${month}/${day}/${year} ${hour12}:${minutes} ${period}`
+  }
+  
+  if (datetime && fallbackDate) {
+    const d = new Date(fallbackDate + 'T00:00:00')
+    const month = (d.getMonth() + 1).toString().padStart(2, '0')
+    const day = d.getDate().toString().padStart(2, '0')
+    const year = d.getFullYear()
+    
+    const [hours, minutes] = datetime.split(':')
+    const hourNum = parseInt(hours, 10)
+    const period = hourNum >= 12 ? 'pm' : 'am'
+    const hour12 = hourNum === 0 ? 12 : hourNum > 12 ? hourNum - 12 : hourNum
+    
+    return `${month}/${day}/${year} ${hour12}:${minutes} ${period}`
+  }
+  
+  return datetime
+}
+
+const parseEditFormatToStorage = (editValue: string): { success: boolean; datetime?: string; error?: string } => {
+  // Expected format: mm/dd/yyyy hh:mm am/pm
+  const regex = /^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})\s+(am|pm)$/i
+  const match = editValue.trim().match(regex)
+  
+  if (!match) {
+    return { 
+      success: false, 
+      error: 'Invalid format. Use: mm/dd/yyyy hh:mm am/pm (e.g., 01/03/2026 10:30 am)' 
+    }
+  }
+  
+  const [, monthStr, dayStr, yearStr, hourStr, minuteStr, period] = match
+  const month = parseInt(monthStr, 10)
+  const day = parseInt(dayStr, 10)
+  const year = parseInt(yearStr, 10)
+  let hour = parseInt(hourStr, 10)
+  const minute = parseInt(minuteStr, 10)
+  
+  // Validate ranges
+  if (month < 1 || month > 12) {
+    return { success: false, error: 'Invalid month (1-12)' }
+  }
+  if (day < 1 || day > 31) {
+    return { success: false, error: 'Invalid day (1-31)' }
+  }
+  if (hour < 1 || hour > 12) {
+    return { success: false, error: 'Invalid hour (1-12)' }
+  }
+  if (minute < 0 || minute > 59) {
+    return { success: false, error: 'Invalid minute (0-59)' }
+  }
+  
+  // Convert to 24-hour format
+  if (period.toLowerCase() === 'pm' && hour !== 12) {
+    hour += 12
+  } else if (period.toLowerCase() === 'am' && hour === 12) {
+    hour = 0
+  }
+  
+  // Format as YYYY-MM-DD HH:mm
+  const dateStr = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`
+  const timeStr = `${hour.toString().padStart(2, '0')}:${minuteStr}`
+  
+  return { success: true, datetime: `${dateStr} ${timeStr}` }
+}
 
 // Editable cell component for text inputs
 function EditableTextCell({
@@ -78,64 +176,6 @@ function EditableTextCell({
   )
 }
 
-// Editable cell component for dropdowns
-function EditableSelectCell({
-  value,
-  onChange,
-  options,
-  onSave,
-  onCancel,
-}: {
-  value: string
-  onChange: (value: string) => void
-  options: string[]
-  onSave: (newValue: string) => void
-  onCancel: () => void
-}) {
-  const handleValueChange = (newValue: string) => {
-    onChange(newValue)
-    // Pass the new value directly to onSave to avoid async state issues
-    setTimeout(() => onSave(newValue), 50)
-  }
-
-  const handleEscapeKeyDown = (e: Event) => {
-    e.preventDefault()
-    onCancel()
-  }
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      e.preventDefault()
-      e.stopPropagation()
-      onCancel()
-    }
-  }
-
-  return (
-    <Select
-      value={value}
-      onValueChange={handleValueChange}
-    >
-      <SelectTrigger
-        onClick={(e) => e.stopPropagation()}
-        onKeyDown={handleKeyDown}
-        className="w-full focus-visible:ring-2 focus-visible:ring-blue-500"
-      >
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent 
-        onEscapeKeyDown={handleEscapeKeyDown}
-        onPointerDownOutside={onCancel}
-      >
-        {options.map((option) => (
-          <SelectItem key={option} value={option}>
-            {option}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  )
-}
 
 export function TimeEntriesTable() {
   const {
@@ -153,68 +193,138 @@ export function TimeEntriesTable() {
     clearFilters,
   } = useTimeTrackingStore()
 
+  const { workAreas, workTypes, loadWorkAreas, loadWorkTypes } = useConfigStore()
+
+  // Load work areas and types on mount
+  useEffect(() => {
+    loadWorkAreas()
+    loadWorkTypes()
+  }, [loadWorkAreas, loadWorkTypes])
+
   const [timeRange, setTimeRange] = useState('today')
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [editingCell, setEditingCell] = useState<{ rowId: string; columnId: string } | null>(null)
   const [editingValue, setEditingValue] = useState<any>(null)
+  const [editingError, setEditingError] = useState<string>('')
+  
+  // Use refs to avoid stale closures in event handlers
+  const editingValueRef = useRef<any>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const cursorPositionRef = useRef<number | null>(null)
 
   // Column helper
   const columnHelper = createColumnHelper<TimeEntry>()
 
-  const handleStartEdit = (rowId: string, columnId: string, value: any) => {
+  const handleStartEdit = (rowId: string, columnId: string, value: any, entryDate?: string) => {
     setEditingCell({ rowId, columnId })
-    setEditingValue(value)
+    setEditingError('')
+    
+    // For datetime fields, convert to editable format
+    if ((columnId === 'startTime' || columnId === 'endTime') && value) {
+      const editFormat = formatDateTimeForEdit(value, entryDate)
+      setEditingValue(editFormat)
+      editingValueRef.current = editFormat
+    } else {
+      setEditingValue(value)
+      editingValueRef.current = value
+    }
   }
 
   const handleSaveEdit = (rowId: string, columnId: string, valueToSave?: any) => {
-    // Use provided value or fall back to editingValue
-    const finalValue = valueToSave !== undefined ? valueToSave : editingValue
+    const finalValue = valueToSave !== undefined ? valueToSave : editingValueRef.current
     
-    if (finalValue !== null && finalValue !== undefined) {
-      const updates: Partial<TimeEntry> = { [columnId]: finalValue }
-
-      // Recalculate duration if start or end time changes
-      const entry = entries.find((e) => e.id === rowId)
-      if (entry && (columnId === 'startTime' || columnId === 'endTime')) {
-        const newStartTime = columnId === 'startTime' ? finalValue : entry.startTime
-        const newEndTime = columnId === 'endTime' ? finalValue : entry.endTime
-
-        if (newStartTime && newEndTime) {
-          updates.duration = calculateDuration(newStartTime, newEndTime)
-        }
+    const entry = entries.find((e) => e.id === rowId)
+    if (!entry) return
+    
+    // For datetime fields, validate and convert format
+    if (columnId === 'startTime' || columnId === 'endTime') {
+      const parseResult = parseEditFormatToStorage(finalValue)
+      
+      if (!parseResult.success) {
+        setEditingError(parseResult.error || 'Invalid format')
+        return // Stay in edit mode
       }
-
+      
+      const updates: Partial<TimeEntry> = { [columnId]: parseResult.datetime }
+      
+      // Recalculate duration
+      const newStartTime = columnId === 'startTime' ? parseResult.datetime : entry.startTime
+      const newEndTime = columnId === 'endTime' ? parseResult.datetime : entry.endTime
+      
+      if (newStartTime && newEndTime) {
+        const parseDateTime = (dt: string) => {
+          if (dt.includes(' ')) {
+            const [date, time] = dt.split(' ')
+            return new Date(`${date}T${time}:00`)
+          }
+          return new Date(`${entry.date}T${dt}:00`)
+        }
+        
+        const start = parseDateTime(newStartTime)
+        const end = parseDateTime(newEndTime)
+        updates.duration = Math.floor((end.getTime() - start.getTime()) / (1000 * 60))
+      }
+      
       updateEntry(rowId, updates)
+      setEditingCell(null)
+      setEditingValue(null)
+      setEditingError('')
+    } else {
+      // Non-datetime fields
+      if (finalValue !== null && finalValue !== undefined) {
+        updateEntry(rowId, { [columnId]: finalValue })
+      }
+      setEditingCell(null)
+      setEditingValue(null)
     }
-    setEditingCell(null)
-    setEditingValue(null)
   }
 
   const handleCancelEdit = () => {
     setEditingCell(null)
     setEditingValue(null)
+    setEditingError('')
+    editingValueRef.current = null
   }
 
   const isEditing = (rowId: string, columnId: string) => {
     return editingCell?.rowId === rowId && editingCell?.columnId === columnId
   }
 
-  // Handle clicking outside to exit edit mode for text inputs only
-  // Dropdowns handle their own outside clicks via onPointerDownOutside
+  // Restore cursor position after state updates
+  useEffect(() => {
+    if (inputRef.current && cursorPositionRef.current !== null) {
+      inputRef.current.setSelectionRange(cursorPositionRef.current, cursorPositionRef.current)
+    }
+  }, [editingValue])
+
+  // Handle clicking outside to exit edit mode
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (editingCell) {
         const target = event.target as HTMLElement
-        // Only handle outside clicks for non-dropdown cells
         const isInsideTable = target.closest('td')
         const isInsideDropdown = target.closest('[role="listbox"]') || target.closest('[data-radix-select-content]')
         const isDropdownTrigger = target.closest('button[role="combobox"]')
+        const isSelectTrigger = target.closest('[data-radix-select-trigger]') || target.closest('button[role="combobox"][data-placeholder]')
         
-        if (!isInsideTable && !isInsideDropdown && !isDropdownTrigger) {
-          // Check if current editing cell has a dropdown
-          const hasDropdown = editingCell.columnId === 'workArea' || editingCell.columnId === 'workType'
-          if (!hasDropdown) {
+        if (!isInsideTable && !isInsideDropdown && !isDropdownTrigger && !isSelectTrigger) {
+          handleSaveEdit(editingCell.rowId, editingCell.columnId)
+        }
+      }
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (editingCell) {
+        if (event.key === 'Escape') {
+          event.preventDefault()
+          handleCancelEdit()
+        } else if (event.key === 'Enter') {
+          const target = event.target as HTMLElement
+          const isInDropdown = target.closest('[role="listbox"]') || target.closest('[data-radix-select-content]')
+          
+          if (!isInDropdown) {
+            event.preventDefault()
             handleSaveEdit(editingCell.rowId, editingCell.columnId)
           }
         }
@@ -222,66 +332,95 @@ export function TimeEntriesTable() {
     }
 
     document.addEventListener('click', handleClickOutside)
-    return () => document.removeEventListener('click', handleClickOutside)
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('click', handleClickOutside)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
   }, [editingCell])
+
 
   // Define columns
   const columns = useMemo(
     () => [
       columnHelper.accessor('startTime', {
         header: 'Start',
-        size: 100,
+        size: 200,
         cell: ({ row, getValue }) => {
           const value = getValue()
           const isEditingCell = isEditing(row.original.id, 'startTime')
 
           if (isEditingCell) {
             return (
-              <EditableTextCell
-                value={editingValue ?? value}
-                onChange={setEditingValue}
-                onSave={() => handleSaveEdit(row.original.id, 'startTime')}
-                onCancel={handleCancelEdit}
-                type="time"
-              />
+              <div onClick={(e) => e.stopPropagation()} className="space-y-1">
+                <Input
+                  ref={inputRef}
+                  value={editingValue}
+                  onChange={(e) => {
+                    const target = e.target as HTMLInputElement
+                    cursorPositionRef.current = target.selectionStart
+                    setEditingValue(e.target.value)
+                    editingValueRef.current = e.target.value
+                    setEditingError('') // Clear error on change
+                  }}
+                  placeholder="mm/dd/yyyy hh:mm am/pm"
+                  className={`w-full text-xs ${editingError ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                  autoFocus
+                />
+                {editingError && (
+                  <p className="text-xs text-red-500">{editingError}</p>
+                )}
+              </div>
             )
           }
 
           return (
             <div
-              onClick={() => handleStartEdit(row.original.id, 'startTime', value)}
-              className="cursor-pointer font-semibold"
+              onClick={() => handleStartEdit(row.original.id, 'startTime', value, row.original.date)}
+              className="cursor-pointer font-semibold text-xs"
             >
-              {value}
+              {formatDateTimeForDisplay(value, row.original.date)}
             </div>
           )
         },
       }),
       columnHelper.accessor('endTime', {
         header: 'End',
-        size: 100,
+        size: 200,
         cell: ({ row, getValue }) => {
           const value = getValue()
           const isEditingCell = isEditing(row.original.id, 'endTime')
 
           if (isEditingCell) {
             return (
-              <EditableTextCell
-                value={editingValue ?? value}
-                onChange={setEditingValue}
-                onSave={() => handleSaveEdit(row.original.id, 'endTime')}
-                onCancel={handleCancelEdit}
-                type="time"
-              />
+              <div onClick={(e) => e.stopPropagation()} className="space-y-1">
+                <Input
+                  ref={inputRef}
+                  value={editingValue}
+                  onChange={(e) => {
+                    const target = e.target as HTMLInputElement
+                    cursorPositionRef.current = target.selectionStart
+                    setEditingValue(e.target.value)
+                    editingValueRef.current = e.target.value
+                    setEditingError('') // Clear error on change
+                  }}
+                  placeholder="mm/dd/yyyy hh:mm am/pm"
+                  className={`w-full text-xs ${editingError ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                  autoFocus
+                />
+                {editingError && (
+                  <p className="text-xs text-red-500">{editingError}</p>
+                )}
+              </div>
             )
           }
 
           return (
             <div
-              onClick={() => handleStartEdit(row.original.id, 'endTime', value)}
-              className="cursor-pointer font-semibold"
+              onClick={() => handleStartEdit(row.original.id, 'endTime', value, row.original.date)}
+              className="cursor-pointer font-semibold text-xs"
             >
-              {value}
+              {value ? formatDateTimeForDisplay(value, row.original.date) : <span className="text-muted-foreground">—</span>}
             </div>
           )
         },
@@ -295,13 +434,22 @@ export function TimeEntriesTable() {
 
           if (isEditingCell) {
             return (
-              <EditableSelectCell
-                value={editingValue ?? value}
-                onChange={setEditingValue}
-                options={workAreas}
-                onSave={(newValue) => handleSaveEdit(row.original.id, 'workArea', newValue)}
-                onCancel={handleCancelEdit}
-              />
+              <div onClick={(e) => e.stopPropagation()}>
+                <Combobox
+                  value={editingValue ?? value}
+                  onValueChange={(newValue) => {
+                    setEditingValue(newValue)
+                    editingValueRef.current = newValue
+                    handleSaveEdit(row.original.id, 'workArea', newValue)
+                  }}
+                  options={workAreas.map(area => ({ value: area.name, label: area.name }))}
+                  placeholder="Select area..."
+                  emptyText="No area found."
+                  className="w-full"
+                  onEnterKey={() => handleSaveEdit(row.original.id, 'workArea')}
+                  onEscapeKey={handleCancelEdit}
+                />
+              </div>
             )
           }
 
@@ -325,13 +473,22 @@ export function TimeEntriesTable() {
 
           if (isEditingCell) {
             return (
-              <EditableSelectCell
-                value={editingValue ?? value}
-                onChange={setEditingValue}
-                options={workTypes}
-                onSave={(newValue) => handleSaveEdit(row.original.id, 'workType', newValue)}
-                onCancel={handleCancelEdit}
-              />
+              <div onClick={(e) => e.stopPropagation()}>
+                <Combobox
+                  value={editingValue ?? value}
+                  onValueChange={(newValue) => {
+                    setEditingValue(newValue)
+                    editingValueRef.current = newValue
+                    handleSaveEdit(row.original.id, 'workType', newValue)
+                  }}
+                  options={workTypes.map(type => ({ value: type.name, label: type.name }))}
+                  placeholder="Select type..."
+                  emptyText="No type found."
+                  className="w-full"
+                  onEnterKey={() => handleSaveEdit(row.original.id, 'workType')}
+                  onEscapeKey={handleCancelEdit}
+                />
+              </div>
             )
           }
 
@@ -357,7 +514,10 @@ export function TimeEntriesTable() {
             return (
               <EditableTextCell
                 value={editingValue ?? value}
-                onChange={setEditingValue}
+                onChange={(val) => {
+                  setEditingValue(val)
+                  editingValueRef.current = val
+                }}
                 onSave={() => handleSaveEdit(row.original.id, 'pomodoros')}
                 onCancel={handleCancelEdit}
                 type="number"
@@ -386,7 +546,10 @@ export function TimeEntriesTable() {
             return (
               <EditableTextCell
                 value={editingValue ?? value}
-                onChange={setEditingValue}
+                onChange={(val) => {
+                  setEditingValue(val)
+                  editingValueRef.current = val
+                }}
                 onSave={() => handleSaveEdit(row.original.id, 'comments')}
                 onCancel={handleCancelEdit}
               />
@@ -394,8 +557,8 @@ export function TimeEntriesTable() {
           }
 
           return (
-            <div onClick={() => handleStartEdit(row.original.id, 'comments', value)} className="cursor-pointer">
-              <div className="text-sm">{value}</div>
+            <div onClick={() => handleStartEdit(row.original.id, 'comments', value)} className="cursor-pointer min-h-[24px]">
+              <div className="text-sm">{value || <span className="text-muted-foreground">Click to add comment</span>}</div>
             </div>
           )
         },
@@ -404,7 +567,11 @@ export function TimeEntriesTable() {
         header: 'Duration',
         size: 100,
         cell: ({ getValue }) => {
-          return <span className="font-bold">{formatDuration(getValue())}</span>
+          const duration = getValue()
+          if (!duration || duration === 0) {
+            return <span className="text-muted-foreground text-sm">—</span>
+          }
+          return <span className="font-bold">{formatDuration(duration)}</span>
         },
       }),
       columnHelper.display({
@@ -427,7 +594,7 @@ export function TimeEntriesTable() {
         },
       }),
     ],
-    [editingCell, editingValue]
+    [editingCell, editingValue, editingError, workAreas, workTypes, entries]
   )
 
   // Global filter function for search
@@ -519,8 +686,8 @@ export function TimeEntriesTable() {
             <SelectContent>
               <SelectItem value="all">All Work Areas</SelectItem>
               {workAreas.map((area) => (
-                <SelectItem key={area} value={area}>
-                  {area}
+                <SelectItem key={area.id} value={area.name}>
+                  {area.name}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -533,8 +700,8 @@ export function TimeEntriesTable() {
             <SelectContent>
               <SelectItem value="all">All Work Types</SelectItem>
               {workTypes.map((type) => (
-                <SelectItem key={type} value={type}>
-                  {type}
+                <SelectItem key={type.id} value={type.name}>
+                  {type.name}
                 </SelectItem>
               ))}
             </SelectContent>
