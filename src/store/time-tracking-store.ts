@@ -92,13 +92,22 @@ export const useTimeTrackingStore = create<TimeTrackingStore>((set, get) => ({
   updateEntry: async (id, updates) => {
     try {
       set({ error: null })
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/4b7757e0-fdc9-4123-97fc-24028150b2c0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'time-tracking-store.ts:94',message:'updateEntry store function called',data:{id,updates},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1-ENTER-SAVE-LOGIC'})}).catch(()=>{});
+      // #endregion
       const updatedEntry = await updateTimeEntryDb(id, updates)
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/4b7757e0-fdc9-4123-97fc-24028150b2c0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'time-tracking-store.ts:98',message:'After updateTimeEntryDb success',data:{id,updatedEntry},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1-ENTER-SAVE-LOGIC'})}).catch(()=>{});
+      // #endregion
       set((state) => ({
         entries: state.entries.map((entry) =>
           entry.id === id ? updatedEntry : entry
         ),
       }))
     } catch (error) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/4b7757e0-fdc9-4123-97fc-24028150b2c0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'time-tracking-store.ts:107',message:'updateEntry failed with error',data:{id,error:String(error)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1-ENTER-SAVE-LOGIC'})}).catch(()=>{});
+      // #endregion
       console.error('Failed to update entry:', error)
       set({ error: 'Failed to update time entry' })
       throw error
