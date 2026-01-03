@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "verify": "npm run build && npm run lint"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

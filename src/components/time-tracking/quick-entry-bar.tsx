@@ -43,12 +43,9 @@ const getCurrentDateTime = (): string => {
   return `${month}/${day}/${year} ${hour12}:${minutes} ${period}`
 }
 
-const parseEditFormatToStorage = (editValue: string): { 
-  success: boolean
-  date?: string
-  time?: string
-  error?: string 
-} => {
+const parseEditFormatToStorage = (editValue: string): 
+  | { success: true; date: string; time: string }
+  | { success: false; error: string } => {
   // Expected format: mm/dd/yyyy hh:mm am/pm
   const regex = /^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})\s+(am|pm)$/i
   const match = editValue.trim().match(regex)
@@ -57,7 +54,7 @@ const parseEditFormatToStorage = (editValue: string): {
     return { 
       success: false, 
       error: 'Invalid format. Use: mm/dd/yyyy hh:mm am/pm (e.g., 01/03/2026 10:30 am)' 
-    }
+    } as const
   }
   
   const [, monthStr, dayStr, yearStr, hourStr, minuteStr, period] = match
