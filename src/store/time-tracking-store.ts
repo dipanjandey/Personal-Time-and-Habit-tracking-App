@@ -6,6 +6,7 @@ import {
   updateTimeEntry as updateTimeEntryDb,
   deleteTimeEntry as deleteTimeEntryDb,
   subscribeToTimeEntries,
+  bulkCreateTimeEntries,
 } from '@/lib/supabase/time-entries'
 import { supabase } from '@/lib/supabase/client'
 
@@ -24,6 +25,7 @@ interface TimeTrackingStore {
   setEntries: (entries: TimeEntry[]) => void
   loadEntries: () => Promise<void>
   addEntry: (entry: Omit<TimeEntry, 'id'>) => Promise<void>
+  bulkAddEntries: (entries: Omit<TimeEntry, 'id'>[]) => Promise<void>
   updateEntry: (id: string, updates: Partial<TimeEntry>) => Promise<void>
   deleteEntry: (id: string) => Promise<void>
   setEditingEntryId: (id: string | null) => void
@@ -85,6 +87,20 @@ export const useTimeTrackingStore = create<TimeTrackingStore>((set, get) => ({
     } catch (error) {
       console.error('Failed to add entry:', error)
       set({ error: 'Failed to add time entry' })
+      throw error
+    }
+  },
+  
+  bulkAddEntries: async (entries) => {
+    try {
+      set({ error: null })
+      const newEntries = await bulkCreateTimeEntries(entries)
+      set((state) => ({
+        entries: [...newEntries, ...state.entries],
+      }))
+    } catch (error) {
+      console.error('Failed to bulk add entries:', error)
+      set({ error: 'Failed to bulk add time entries' })
       throw error
     }
   },

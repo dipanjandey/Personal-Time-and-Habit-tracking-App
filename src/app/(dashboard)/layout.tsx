@@ -1,6 +1,6 @@
 'use client'
 
-import { Clock, Settings, BarChart, ListChecks, LogOut, Timer, Timer as TimerIcon } from 'lucide-react'
+import { Clock, Settings, BarChart, ListChecks, LogOut } from 'lucide-react'
 import Link from 'next/link'
 import { useAuth } from '@/providers/auth-provider'
 import { useRouter } from 'next/navigation'
@@ -21,19 +21,9 @@ import { Button } from '@/components/ui/button'
 
 const navigation = [
   {
-    title: 'Timer',
-    href: '/timer',
-    icon: TimerIcon,
-  },
-  {
     title: 'Track Time',
     href: '/track-time',
     icon: Clock,
-  },
-  {
-    title: 'Time Tracking',
-    href: '/time-tracking',
-    icon: Timer,
   },
   {
     title: 'Configure',

@@ -8,6 +8,23 @@ import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Plus, Pencil, Trash2, Check, X, GripVertical } from 'lucide-react'
 import { toast } from 'sonner'
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 
 interface EditableListItem {
   id: string
@@ -23,6 +40,110 @@ interface EditableListProps {
   onEdit: (id: string, name: string) => Promise<void>
   onDelete: (id: string) => Promise<void>
   onReorder?: (items: EditableListItem[]) => Promise<void>
+}
+
+interface SortableItemProps {
+  item: EditableListItem
+  isEditing: boolean
+  editingName: string
+  onEditingNameChange: (name: string) => void
+  onStartEdit: () => void
+  onSaveEdit: () => void
+  onCancelEdit: () => void
+  onDelete: () => void
+  showDragHandle: boolean
+}
+
+function SortableItem({
+  item,
+  isEditing,
+  editingName,
+  onEditingNameChange,
+  onStartEdit,
+  onSaveEdit,
+  onCancelEdit,
+  onDelete,
+  showDragHandle,
+}: SortableItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: item.id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="flex items-center gap-2 p-2 rounded-md border bg-card hover:bg-accent/50 transition-colors"
+    >
+      {showDragHandle && (
+        <div
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing touch-none"
+        >
+          <GripVertical className="w-4 h-4 text-muted-foreground" />
+        </div>
+      )}
+      
+      {isEditing ? (
+        <>
+          <Input
+            value={editingName}
+            onChange={(e) => onEditingNameChange(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                onSaveEdit()
+              } else if (e.key === 'Escape') {
+                onCancelEdit()
+              }
+            }}
+            className="flex-1"
+            autoFocus
+          />
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={onSaveEdit}
+            disabled={!editingName.trim()}
+          >
+            <Check className="w-4 h-4 text-green-600" />
+          </Button>
+          <Button size="icon" variant="ghost" onClick={onCancelEdit}>
+            <X className="w-4 h-4 text-red-600" />
+          </Button>
+        </>
+      ) : (
+        <>
+          <span className="flex-1 text-sm">{item.name}</span>
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={onStartEdit}
+          >
+            <Pencil className="w-4 h-4" />
+          </Button>
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={onDelete}
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </>
+      )}
+    </div>
+  )
 }
 
 export function EditableList({
@@ -41,6 +162,17 @@ export function EditableList({
   const [isTextEditMode, setIsTextEditMode] = useState(false)
   const [textEditValue, setTextEditValue] = useState('')
   const [isSavingBulk, setIsSavingBulk] = useState(false)
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
 
   const handleAdd = async () => {
     if (!newItemName.trim()) {
@@ -165,6 +297,35 @@ export function EditableList({
     setTextEditValue('')
   }
 
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event
+
+    if (!over || active.id === over.id || !onReorder) {
+      return
+    }
+
+    const oldIndex = items.findIndex((item) => item.id === active.id)
+    const newIndex = items.findIndex((item) => item.id === over.id)
+
+    if (oldIndex === -1 || newIndex === -1) {
+      return
+    }
+
+    const reorderedItems = arrayMove(items, oldIndex, newIndex).map(
+      (item, index) => ({
+        ...item,
+        orderIndex: index,
+      })
+    )
+
+    try {
+      await onReorder(reorderedItems)
+      toast.success('Items reordered successfully')
+    } catch (error) {
+      toast.error('Failed to reorder items')
+    }
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -251,73 +412,39 @@ export function EditableList({
             </div>
 
             {/* List items */}
-            <div className="space-y-2">
-          {items.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">
-              No items yet. Add one above to get started.
-            </p>
-          ) : (
-            items.map((item) => (
-              <div
-                key={item.id}
-                className="flex items-center gap-2 p-2 rounded-md border bg-card hover:bg-accent/50 transition-colors"
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={items.map((item) => item.id)}
+                strategy={verticalListSortingStrategy}
               >
-                {onReorder && (
-                  <div className="cursor-grab active:cursor-grabbing">
-                    <GripVertical className="w-4 h-4 text-muted-foreground" />
-                  </div>
-                )}
-                
-                {editingId === item.id ? (
-                  <>
-                    <Input
-                      value={editingName}
-                      onChange={(e) => setEditingName(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          handleSaveEdit()
-                        } else if (e.key === 'Escape') {
-                          handleCancelEdit()
-                        }
-                      }}
-                      className="flex-1"
-                      autoFocus
-                    />
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={handleSaveEdit}
-                      disabled={!editingName.trim()}
-                    >
-                      <Check className="w-4 h-4 text-green-600" />
-                    </Button>
-                    <Button size="icon" variant="ghost" onClick={handleCancelEdit}>
-                      <X className="w-4 h-4 text-red-600" />
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <span className="flex-1 text-sm">{item.name}</span>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => handleStartEdit(item)}
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => handleDelete(item.id)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </>
-                )}
-              </div>
-            ))
-          )}
-            </div>
+                <div className="space-y-2">
+                  {items.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-8">
+                      No items yet. Add one above to get started.
+                    </p>
+                  ) : (
+                    items.map((item) => (
+                      <SortableItem
+                        key={item.id}
+                        item={item}
+                        isEditing={editingId === item.id}
+                        editingName={editingName}
+                        onEditingNameChange={setEditingName}
+                        onStartEdit={() => handleStartEdit(item)}
+                        onSaveEdit={handleSaveEdit}
+                        onCancelEdit={handleCancelEdit}
+                        onDelete={() => handleDelete(item.id)}
+                        showDragHandle={!!onReorder}
+                      />
+                    ))
+                  )}
+                </div>
+              </SortableContext>
+            </DndContext>
           </>
         )}
       </CardContent>

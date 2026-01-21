@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useTimeTrackingStore } from '@/store/time-tracking-store'
-import { formatDuration, getTodayDate } from '@/lib/time-utils'
+import { formatDuration, getTodayDate, getWeekStartDate } from '@/lib/time-utils'
 
 export function SummaryCards() {
   const { entries } = useTimeTrackingStore()
@@ -13,8 +13,10 @@ export function SummaryCards() {
   const todayTime = todayEntries.reduce((sum, e) => sum + e.duration, 0)
   const todayPomodoros = todayEntries.reduce((sum, e) => sum + e.pomodoros, 0)
   
-  // Calculate week time (mock for now)
-  const weekTime = entries.reduce((sum, e) => sum + e.duration, 0)
+  // Calculate week time from Monday onwards
+  const weekStart = getWeekStartDate()
+  const weekEntries = entries.filter((e) => e.date >= weekStart)
+  const weekTime = weekEntries.reduce((sum, e) => sum + e.duration, 0)
   
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">

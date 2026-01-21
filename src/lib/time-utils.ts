@@ -33,3 +33,15 @@ export function getCurrentTime(): string {
 export function getTodayDate(): string {
   return new Date().toISOString().split('T')[0]
 }
+
+export function getWeekStartDate(): string {
+  const today = new Date()
+  const dayOfWeek = today.getDay() // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+  const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1 // If Sunday, go back 6 days; otherwise go back (dayOfWeek - 1) days
+  
+  const monday = new Date(today)
+  monday.setDate(today.getDate() - daysFromMonday)
+  monday.setHours(0, 0, 0, 0)
+  
+  return monday.toISOString().split('T')[0]
+}

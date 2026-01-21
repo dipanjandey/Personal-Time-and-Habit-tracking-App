@@ -140,6 +140,31 @@ export async function deleteTimeEntry(id: string): Promise<void> {
 }
 
 /**
+ * Bulk create multiple time entries
+ */
+export async function bulkCreateTimeEntries(entries: Omit<TimeEntry, 'id'>[]): Promise<TimeEntry[]> {
+  const { data: { user } } = await supabase.auth.getUser()
+  
+  if (!user) {
+    throw new Error('User not authenticated')
+  }
+  
+  const insertData = entries.map((entry) => timeEntryToInsert(entry, user.id))
+  
+  const { data, error } = await supabase
+    .from('time_entries')
+    .insert(insertData)
+    .select()
+  
+  if (error) {
+    console.error('Error bulk creating time entries:', error)
+    throw error
+  }
+  
+  return data.map(rowToTimeEntry)
+}
+
+/**
  * Subscribe to real-time changes for time entries
  */
 export function subscribeToTimeEntries(
