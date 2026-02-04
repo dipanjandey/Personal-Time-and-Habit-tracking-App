@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { BarChart, Clock, Target, TrendingUp } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -58,7 +58,6 @@ const CHART_COLORS = [
 
 export default function AnalyticsPage() {
   const [period, setPeriod] = useState<TimePeriod>('week')
-  const [customDateRange, setCustomDateRange] = useState<DateRange | undefined>()
   const [dateFrom, setDateFrom] = useState<Date>()
   const [dateTo, setDateTo] = useState<Date>()
 
@@ -71,11 +70,12 @@ export default function AnalyticsPage() {
     loadWorkTypes()
   }, [loadEntries, loadWorkAreas, loadWorkTypes])
 
-  // Update custom date range when both dates are selected
-  useEffect(() => {
+  // Derive custom date range from dateFrom and dateTo
+  const customDateRange = useMemo(() => {
     if (dateFrom && dateTo) {
-      setCustomDateRange({ from: dateFrom, to: dateTo })
+      return { from: dateFrom, to: dateTo }
     }
+    return undefined
   }, [dateFrom, dateTo])
 
   const analyticsData = useAnalyticsData(
