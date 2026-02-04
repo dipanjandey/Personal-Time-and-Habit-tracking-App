@@ -205,16 +205,16 @@ export function QuickEntryBar() {
   }
 
   return (
-    <div className="bg-gradient-to-br from-primary/90 to-purple-600 rounded-lg p-3 md:p-5 text-primary-foreground mb-4 md:mb-6">
-      <div className="flex items-center gap-2 mb-3">
+    <div className="bg-blue-600 rounded-lg p-3 md:p-5 text-white mb-4 md:mb-6 shadow-lg shadow-blue-500/20 border border-blue-400/30 relative overflow-hidden before:absolute before:inset-0 before:bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.1),transparent_50%)] before:pointer-events-none">
+      <div className="flex items-center gap-2 mb-3 relative z-10">
         <div className="w-5 h-5 flex items-center justify-center text-sm">⚡</div>
         <h3 className="text-base md:text-lg font-semibold">Quick Entry</h3>
         <span className="text-xs md:text-sm opacity-90">(Fast track your time)</span>
       </div>
 
-      <form onSubmit={handleSubmit} className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-9 gap-3 md:gap-4">
-        <div className="space-y-1 col-span-2 sm:col-span-2 lg:col-span-2">
-          <Label htmlFor="start-time" className="text-[10px] md:text-xs font-bold uppercase text-primary-foreground/90">
+      <form onSubmit={handleSubmit} className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-9 gap-3 md:gap-4 relative z-10">
+        <div className="space-y-1 col-span-2 sm:col-span-2 xl:col-span-2">
+          <Label htmlFor="start-time" className="text-[10px] md:text-xs font-bold uppercase text-white/90">
             Start
           </Label>
           <InputGroup>
@@ -250,8 +250,8 @@ export function QuickEntryBar() {
           )}
         </div>
 
-        <div className="space-y-1 col-span-2 sm:col-span-2 lg:col-span-2">
-          <Label htmlFor="end-time" className="text-[10px] md:text-xs font-bold uppercase text-primary-foreground/90">
+        <div className="space-y-1 col-span-2 sm:col-span-2 xl:col-span-2">
+          <Label htmlFor="end-time" className="text-[10px] md:text-xs font-bold uppercase text-white/90">
             End
           </Label>
           <InputGroup>
@@ -287,7 +287,7 @@ export function QuickEntryBar() {
         </div>
 
         <div className="space-y-1 col-span-2 sm:col-span-2">
-          <Label htmlFor="work-area" className="text-[10px] md:text-xs font-bold uppercase text-primary-foreground/90">
+          <Label htmlFor="work-area" className="text-[10px] md:text-xs font-bold uppercase text-white/90">
             Area
           </Label>
           <Combobox
@@ -302,7 +302,7 @@ export function QuickEntryBar() {
         </div>
 
         <div className="space-y-1 col-span-2 sm:col-span-2">
-          <Label htmlFor="work-type" className="text-[10px] md:text-xs font-bold uppercase text-primary-foreground/90">
+          <Label htmlFor="work-type" className="text-[10px] md:text-xs font-bold uppercase text-white/90">
             Type
           </Label>
           <Combobox
@@ -317,7 +317,7 @@ export function QuickEntryBar() {
         </div>
 
         <div className="space-y-1">
-          <Label htmlFor="pomodoros" className="text-[10px] md:text-xs font-bold uppercase text-primary-foreground/90">
+          <Label htmlFor="pomodoros" className="text-[10px] md:text-xs font-bold uppercase text-white/90">
             # pomodoros
           </Label>
           <Input
@@ -330,8 +330,8 @@ export function QuickEntryBar() {
           />
         </div>
 
-        <div className="space-y-1 col-span-2 sm:col-span-4 lg:col-span-4">
-          <Label htmlFor="comments" className="text-[10px] md:text-xs font-bold uppercase text-primary-foreground/90">
+        <div className="space-y-1 col-span-2 sm:col-span-4 xl:col-span-4">
+          <Label htmlFor="comments" className="text-[10px] md:text-xs font-bold uppercase text-white/90">
             Comments
           </Label>
           <Textarea
@@ -345,7 +345,7 @@ export function QuickEntryBar() {
           />
         </div>
 
-        <div className="flex items-end col-span-2 sm:col-span-4 lg:col-span-2">
+        <div className="flex items-end col-span-2 sm:col-span-4 xl:col-span-2">
           <Button
             type="submit"
             size="default"

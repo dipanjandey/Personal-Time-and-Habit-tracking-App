@@ -90,7 +90,7 @@ export default function LoginPage() {
                         onClick={handleGoogleAuth}
                         disabled={loading}
                         variant="outline"
-                        className="w-full bg-white hover:bg-gray-100 text-gray-900 border-0 mb-4"
+                        className="w-full bg-blue-500 hover:bg-blue-600 text-white border-0 mb-4"
                     >
                         <Chrome className="w-5 h-5 mr-2" />
                         Continue with Google

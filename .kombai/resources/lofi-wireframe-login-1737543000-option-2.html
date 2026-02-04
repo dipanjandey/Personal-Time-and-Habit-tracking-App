@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login Wireframe - Option 2: Social-First Minimal</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      background: #f5f5f5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .title {
+      text-align: center;
+      margin-bottom: 30px;
+      color: #333;
+    }
+    .title h1 {
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+    .title p {
+      font-size: 14px;
+      color: #666;
+    }
+    .container {
+      width: 100%;
+      max-width: 400px;
+    }
+    .card {
+      background: #fff;
+      border: 2px solid #333;
+      border-radius: 12px;
+      padding: 40px 32px;
+      position: relative;
+    }
+    .logo-section {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .logo-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: #ccc;
+      border: 2px dashed #666;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      color: #666;
+    }
+    .app-name {
+      font-size: 22px;
+      font-weight: bold;
+      color: #333;
+    }
+    .tagline {
+      font-size: 14px;
+      color: #666;
+      margin-top: 4px;
+    }
+    .social-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .btn {
+      width: 100%;
+      padding: 14px;
+      border: 2px solid #333;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    .btn-google {
+      background: #fff;
+      color: #333;
+    }
+    .btn-github {
+      background: #333;
+      color: #fff;
+    }
+    .icon-placeholder {
+      width: 20px;
+      height: 20px;
+      background: #999;
+      border-radius: 4px;
+    }
+    .btn-github .icon-placeholder {
+      background: #ccc;
+    }
+    .divider {
+      display: flex;
+      align-items: center;
+      margin: 24px 0;
+    }
+    .divider-line {
+      flex: 1;
+      height: 1px;
+      background: #ddd;
+    }
+    .divider-text {
+      padding: 0 16px;
+      color: #999;
+      font-size: 13px;
+    }
+    .email-section {
+      position: relative;
+    }
+    .form-group {
+      margin-bottom: 14px;
+      position: relative;
+    }
+    .label {
+      display: block;
+      font-size: 13px;
+      color: #333;
+      margin-bottom: 6px;
+      font-weight: bold;
+    }
+    .input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 2px solid #ccc;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 14px;
+      background: #fafafa;
+    }
+    .input:focus {
+      border-color: #333;
+      outline: none;
+    }
+    .forgot-link {
+      text-align: right;
+      margin-bottom: 16px;
+    }
+    .forgot-link a {
+      font-size: 13px;
+      color: #666;
+      text-decoration: underline;
+    }
+    .btn-submit {
+      background: #333;
+      color: #fff;
+      margin-top: 8px;
+    }
+    .footer-text {
+      text-align: center;
+      font-size: 13px;
+      color: #666;
+      margin-top: 24px;
+      padding-top: 24px;
+      border-top: 1px solid #eee;
+    }
+    .footer-link {
+      color: #333;
+      font-weight: bold;
+      text-decoration: underline;
+    }
+    .reuse-badge {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: #4CAF50;
+      color: white;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-family: Arial, sans-serif;
+      font-weight: bold;
+      z-index: 10;
+    }
+    .new-badge {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: #FF9800;
+      color: white;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-family: Arial, sans-serif;
+      font-weight: bold;
+      z-index: 10;
+    }
+  </style>
+</head>
+<body>
+  <div class="title">
+    <h1>Option 2: Social-First Minimal</h1>
+    <p>Prioritizes social login with Google/GitHub, email as alternative option</p>
+  </div>
+
+  <div class="container">
+    <!-- REUSABLE: Card from src/components/ui/card.tsx -->
+    <div class="card">
+      <span class="reuse-badge" title="src/components/ui/card.tsx">[REUSE] Card</span>
+      
+      <div class="logo-section">
+        <div class="logo-row">
+          <div class="logo-icon">[Icon]</div>
+          <div class="app-name">Habit Tracker</div>
+        </div>
+        <div class="tagline">Track your time, build better habits</div>
+      </div>
+
+      <div class="social-buttons">
+        <!-- REUSABLE: Button from src/components/ui/button.tsx -->
+        <div style="position: relative;">
+          <span class="reuse-badge" title="src/components/ui/button.tsx">[REUSE] Button</span>
+          <button class="btn btn-google">
+            <span class="icon-placeholder"></span>
+            Continue with Google
+          </button>
+        </div>
+
+        <!-- NEW COMPONENT: GitHub auth option -->
+        <div style="position: relative;">
+          <span class="new-badge" title="New: Add GitHub OAuth provider">[NEW] GitHub Auth</span>
+          <button class="btn btn-github">
+            <span class="icon-placeholder"></span>
+            Continue with GitHub
+          </button>
+        </div>
+      </div>
+
+      <div class="divider">
+        <div class="divider-line"></div>
+        <span class="divider-text">or sign in with email</span>
+        <div class="divider-line"></div>
+      </div>
+
+      <div class="email-section">
+        <div class="form-group" style="position: relative;">
+          <span class="reuse-badge" title="src/components/ui/label.tsx">[REUSE] Label</span>
+          <label class="label">Email address</label>
+          <div style="position: relative;">
+            <span class="reuse-badge" title="src/components/ui/input.tsx">[REUSE] Input</span>
+            <input type="email" class="input" placeholder="Enter your email" />
+          </div>
+        </div>
+
+        <div class="form-group" style="position: relative;">
+          <span class="reuse-badge" title="src/components/ui/label.tsx">[REUSE] Label</span>
+          <label class="label">Password</label>
+          <div style="position: relative;">
+            <span class="reuse-badge" title="src/components/ui/input.tsx">[REUSE] Input</span>
+            <input type="password" class="input" placeholder="Enter your password" />
+          </div>
+        </div>
+
+        <div class="forgot-link">
+          <a href="#">Forgot password?</a>
+        </div>
+
+        <!-- REUSABLE: Button from src/components/ui/button.tsx -->
+        <div style="position: relative;">
+          <span class="reuse-badge" title="src/components/ui/button.tsx">[REUSE] Button</span>
+          <button class="btn btn-submit">
+            Sign In
+          </button>
+        </div>
+      </div>
+
+      <div class="footer-text">
+        New to Habit Tracker? <span class="footer-link">Create an account</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

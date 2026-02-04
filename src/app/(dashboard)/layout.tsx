@@ -1,6 +1,6 @@
 'use client'
 
-import { Clock, Settings, BarChart, ListChecks, LogOut } from 'lucide-react'
+import { Clock, Settings, BarChart, ListChecks, LogOut, FileText } from 'lucide-react'
 import Link from 'next/link'
 import { useAuth } from '@/providers/auth-provider'
 import { useRouter } from 'next/navigation'
@@ -39,6 +39,11 @@ const navigation = [
     title: 'Reports',
     href: '/reports',
     icon: ListChecks,
+  },
+  {
+    title: 'Journal',
+    href: '/journal',
+    icon: FileText,
   },
 ]
 
