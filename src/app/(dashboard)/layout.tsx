@@ -4,6 +4,7 @@ import { Clock, Settings, BarChart, LogOut, History } from 'lucide-react'
 import Link from 'next/link'
 import { useAuth } from '@/providers/auth-provider'
 import { useRouter } from 'next/navigation'
+import { ThemeToggle } from '@/components/ui/theme-toggle'
 import {
   Sidebar,
   SidebarContent,
@@ -59,9 +60,11 @@ export default function DashboardLayout({
     <SidebarProvider>
       <Sidebar>
         <SidebarHeader className="border-b p-4">
-          <div className="flex items-center gap-2 font-bold text-lg">
-            <Clock className="w-5 h-5" />
-            <span>Habit & Time Tracker</span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 font-bold text-lg">
+              <span>Habit & Time Tracker</span>
+            </div>
+            <ThemeToggle />
           </div>
         </SidebarHeader>
         <SidebarContent>

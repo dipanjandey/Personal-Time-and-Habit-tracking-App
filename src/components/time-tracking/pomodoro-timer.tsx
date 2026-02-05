@@ -75,9 +75,9 @@ export function PomodoroTimer() {
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const hasRestoredRef = useRef(false)
 
-  // Get today's pomodoro entries
+  // Get today's entries (includes both full pomodoros and partial sessions)
   const todaysPomodoroEntries = entries.filter(
-    (entry) => entry.date === getTodayISO() && entry.pomodoros > 0
+    (entry) => entry.date === getTodayISO()
   ).slice(0, 5) // Show max 5 recent entries
 
   // Check if form is valid (Area + Type required)
@@ -166,12 +166,21 @@ export function PomodoroTimer() {
   }, [config])
 
   // Save completed pomodoro to time entries
-  const saveCompletedPomodoro = useCallback(async () => {
+  // If actualDurationMinutes is provided, use that instead of full pomodoro duration
+  const saveCompletedPomodoro = useCallback(async (actualDurationMinutes?: number) => {
     if (mode !== 'pomodoro') return // Don't save breaks
     
     const now = new Date()
-    const durationMinutes = config.pomodoro
+    const durationMinutes = actualDurationMinutes ?? config.pomodoro
     const startTime = new Date(now.getTime() - durationMinutes * 60 * 1000)
+    
+    // Don't save if duration is less than 1 minute
+    if (durationMinutes < 1) {
+      toast.info('Session too short', {
+        description: 'Sessions under 1 minute are not saved.',
+      })
+      return
+    }
     
     try {
       await addEntry({
@@ -179,15 +188,15 @@ export function PomodoroTimer() {
         endTime: formatTimeHHMM(now),
         workArea: selectedArea,
         workType: selectedType,
-        pomodoros: 1,
+        pomodoros: actualDurationMinutes ? 0 : 1, // Only count as full pomodoro if completed naturally
         comments: comments,
         date: getTodayISO(),
-        duration: durationMinutes,
+        duration: Math.round(durationMinutes),
         userId: '', // Will be set by the store/supabase
       })
       
-      toast.success('Pomodoro completed!', {
-        description: `${durationMinutes} min • ${selectedArea} • ${selectedType}`,
+      toast.success(actualDurationMinutes ? 'Partial session saved!' : 'Pomodoro completed!', {
+        description: `${Math.round(durationMinutes)} min • ${selectedArea} • ${selectedType}`,
       })
     } catch (error) {
       console.error('Failed to save pomodoro entry:', error)
@@ -284,6 +293,9 @@ export function PomodoroTimer() {
 
   const handleStop = async () => {
     // Stop and complete the current cycle
+    const wasRunning = isRunning
+    const currentStartedAt = startedAt
+    
     setIsRunning(false)
     setStartedAt(null)
     
@@ -295,19 +307,27 @@ export function PomodoroTimer() {
     }
     
     if (mode === 'pomodoro') {
-      // Complete the pomodoro - save entry and move to break
-      const newCount = completedPomodoros + 1
-      setCompletedPomodoros(newCount)
-      await saveCompletedPomodoro()
+      // Calculate actual elapsed time in minutes
+      let actualDurationMinutes: number | undefined = undefined
       
-      // Move to appropriate break
-      if (newCount % config.longBreakInterval === 0) {
-        setMode('longBreak')
-        setTimeLeft(config.longBreak * 60)
+      if (wasRunning && currentStartedAt) {
+        // Timer was running - calculate elapsed time from when it started
+        const elapsedMs = Date.now() - currentStartedAt
+        actualDurationMinutes = elapsedMs / (1000 * 60) // Convert to minutes
       } else {
-        setMode('shortBreak')
-        setTimeLeft(config.shortBreak * 60)
+        // Timer was paused - calculate from how much time has been used
+        const initialTime = getInitialTime(mode)
+        const usedSeconds = initialTime - timeLeft
+        actualDurationMinutes = usedSeconds / 60
       }
+      
+      // Save the partial session with actual duration
+      await saveCompletedPomodoro(actualDurationMinutes)
+      
+      // Don't increment completed pomodoros count for partial sessions
+      // Move to short break
+      setMode('shortBreak')
+      setTimeLeft(config.shortBreak * 60)
     } else {
       // Complete break, go to pomodoro
       setMode('pomodoro')
@@ -451,7 +471,7 @@ export function PomodoroTimer() {
 
           {/* Area, Type, Comments Form */}
           <div className="border-t pt-6 mt-2 space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-6">
               {/* Area Select */}
               <div className="space-y-2">
                 <Label htmlFor="area" className="text-sm font-medium">
@@ -465,6 +485,7 @@ export function PomodoroTimer() {
                   <SelectTrigger 
                     id="area"
                     className={cn(
+                      "w-full",
                       showValidation && !selectedArea && "border-destructive ring-destructive"
                     )}
                   >
@@ -496,6 +517,7 @@ export function PomodoroTimer() {
                   <SelectTrigger 
                     id="type"
                     className={cn(
+                      "w-full",
                       showValidation && !selectedType && "border-destructive ring-destructive"
                     )}
                   >
@@ -541,18 +563,16 @@ export function PomodoroTimer() {
                 {todaysPomodoroEntries.map((entry) => (
                   <div 
                     key={entry.id}
-                    className="flex items-center justify-between py-2 px-3 bg-muted/50 rounded-lg text-sm"
+                    className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-2 py-2 px-3 bg-muted/50 rounded-lg text-sm"
                   >
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg">🍅</span>
-                      <span className="font-medium">{entry.workArea}</span>
-                      <span className="text-muted-foreground">•</span>
-                      <span className="text-muted-foreground">{entry.workType}</span>
+                    <span className="text-lg shrink-0">{entry.pomodoros > 0 ? '🍅' : '⏱️'}</span>
+                    <div className="flex items-center gap-2 min-w-0 overflow-hidden">
+                      <span className="font-medium truncate">{entry.workArea}</span>
+                      <span className="text-muted-foreground shrink-0">•</span>
+                      <span className="text-muted-foreground truncate">{entry.workType}</span>
                     </div>
-                    <div className="flex items-center gap-3 text-muted-foreground">
-                      <span>{entry.duration} min</span>
-                      <span>{entry.startTime}</span>
-                    </div>
+                    <span className="text-muted-foreground text-right whitespace-nowrap">{entry.duration} min</span>
+                    <span className="text-muted-foreground text-right whitespace-nowrap w-14">{entry.startTime?.split(' ')[1] || entry.startTime}</span>
                   </div>
                 ))}
               </div>

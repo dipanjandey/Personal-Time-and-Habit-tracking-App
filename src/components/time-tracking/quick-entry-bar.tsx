@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Clock } from 'lucide-react'
+import { Clock, Plus, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { InputGroup, InputGroupInput, InputGroupButton } from '@/components/ui/input-group'
@@ -281,7 +281,7 @@ export function QuickEntryBar() {
         </div>
 
         <div className="space-y-1 col-span-2 sm:col-span-2">
-          <Label htmlFor="work-area" className="text-[10px] md:text-xs font-bold uppercase text-primary-foreground/90">
+          <Label htmlFor="work-area" className="text-[10px] md:text-xs font-bold uppercase text-primary-foreground/90 text-center block">
             Area
           </Label>
           <Combobox
@@ -296,7 +296,7 @@ export function QuickEntryBar() {
         </div>
 
         <div className="space-y-1 col-span-2 sm:col-span-2">
-          <Label htmlFor="work-type" className="text-[10px] md:text-xs font-bold uppercase text-primary-foreground/90">
+          <Label htmlFor="work-type" className="text-[10px] md:text-xs font-bold uppercase text-primary-foreground/90 text-center block">
             Type
           </Label>
           <Combobox
@@ -311,7 +311,7 @@ export function QuickEntryBar() {
         </div>
 
         <div className="space-y-1">
-          <Label htmlFor="pomodoros" className="text-[10px] md:text-xs font-bold uppercase text-primary-foreground/90">
+          <Label htmlFor="pomodoros" className="text-[10px] md:text-xs font-bold uppercase text-primary-foreground/90 text-center block">
             # pomodoros
           </Label>
           <Input
@@ -344,10 +344,20 @@ export function QuickEntryBar() {
             type="submit"
             size="default"
             variant="secondary"
-            className="w-full h-8 md:h-9 text-xs md:text-sm font-semibold bg-white text-primary hover:bg-white/90 shadow-md"
+            className="w-full h-8 md:h-9 text-xs md:text-sm font-semibold bg-emerald-900 dark:bg-emerald-700 text-white hover:bg-emerald-800 dark:hover:bg-emerald-600 shadow-md"
             disabled={isSubmitting}
           >
-            {isSubmitting ? '⏳ Adding...' : '➕ Add Entry'}
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Adding...
+              </>
+            ) : (
+              <>
+                <Plus className="w-4 h-4" />
+                Add Entry
+              </>
+            )}
           </Button>
         </div>
       </form>
