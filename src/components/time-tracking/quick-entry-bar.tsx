@@ -205,16 +205,10 @@ export function QuickEntryBar() {
   }
 
   return (
-    <div className="bg-blue-600 rounded-lg p-3 md:p-5 text-white mb-4 md:mb-6 shadow-lg shadow-blue-500/20 border border-blue-400/30 relative overflow-hidden before:absolute before:inset-0 before:bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.1),transparent_50%)] before:pointer-events-none">
-      <div className="flex items-center gap-2 mb-3 relative z-10">
-        <div className="w-5 h-5 flex items-center justify-center text-sm">⚡</div>
-        <h3 className="text-base md:text-lg font-semibold">Quick Entry</h3>
-        <span className="text-xs md:text-sm opacity-90">(Fast track your time)</span>
-      </div>
-
+    <div className="bg-primary rounded-lg p-4 md:p-6 text-primary-foreground mb-4 md:mb-6 shadow-lg shadow-primary/20 border border-primary/30 relative overflow-hidden before:absolute before:inset-0 before:bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.1),transparent_50%)] before:pointer-events-none">
       <form onSubmit={handleSubmit} className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-9 gap-3 md:gap-4 relative z-10">
         <div className="space-y-1 col-span-2 sm:col-span-2 xl:col-span-2">
-          <Label htmlFor="start-time" className="text-[10px] md:text-xs font-bold uppercase text-white/90">
+          <Label htmlFor="start-time" className="text-[10px] md:text-xs font-bold uppercase text-primary-foreground/90 invisible">
             Start
           </Label>
           <InputGroup>
@@ -230,7 +224,7 @@ export function QuickEntryBar() {
               }}
               placeholder="mm/dd/yyyy hh:mm am/pm"
               className={`bg-background text-foreground h-8 md:h-9 text-xs md:text-sm ${
-                startError ? 'border-red-500 focus-visible:ring-red-500' : ''
+                startError ? 'border-danger focus-visible:ring-danger' : ''
               }`}
               required
             />
@@ -246,12 +240,12 @@ export function QuickEntryBar() {
             </InputGroupButton>
           </InputGroup>
           {startError && (
-            <p className="text-xs text-red-200 mt-1">{startError}</p>
+            <p className="text-xs text-danger-foreground mt-1">{startError}</p>
           )}
         </div>
 
         <div className="space-y-1 col-span-2 sm:col-span-2 xl:col-span-2">
-          <Label htmlFor="end-time" className="text-[10px] md:text-xs font-bold uppercase text-white/90">
+          <Label htmlFor="end-time" className="text-[10px] md:text-xs font-bold uppercase text-primary-foreground/90">
             End
           </Label>
           <InputGroup>
@@ -267,7 +261,7 @@ export function QuickEntryBar() {
               }}
               placeholder="mm/dd/yyyy hh:mm am/pm"
               className={`bg-background text-foreground h-8 md:h-9 text-xs md:text-sm ${
-                endError ? 'border-red-500 focus-visible:ring-red-500' : ''
+                endError ? 'border-danger focus-visible:ring-danger' : ''
               }`}
             />
             <InputGroupButton
@@ -282,12 +276,12 @@ export function QuickEntryBar() {
             </InputGroupButton>
           </InputGroup>
           {endError && (
-            <p className="text-xs text-red-200 mt-1">{endError}</p>
+            <p className="text-xs text-danger-foreground mt-1">{endError}</p>
           )}
         </div>
 
         <div className="space-y-1 col-span-2 sm:col-span-2">
-          <Label htmlFor="work-area" className="text-[10px] md:text-xs font-bold uppercase text-white/90">
+          <Label htmlFor="work-area" className="text-[10px] md:text-xs font-bold uppercase text-primary-foreground/90">
             Area
           </Label>
           <Combobox
@@ -302,7 +296,7 @@ export function QuickEntryBar() {
         </div>
 
         <div className="space-y-1 col-span-2 sm:col-span-2">
-          <Label htmlFor="work-type" className="text-[10px] md:text-xs font-bold uppercase text-white/90">
+          <Label htmlFor="work-type" className="text-[10px] md:text-xs font-bold uppercase text-primary-foreground/90">
             Type
           </Label>
           <Combobox
@@ -317,7 +311,7 @@ export function QuickEntryBar() {
         </div>
 
         <div className="space-y-1">
-          <Label htmlFor="pomodoros" className="text-[10px] md:text-xs font-bold uppercase text-white/90">
+          <Label htmlFor="pomodoros" className="text-[10px] md:text-xs font-bold uppercase text-primary-foreground/90">
             # pomodoros
           </Label>
           <Input
@@ -331,7 +325,7 @@ export function QuickEntryBar() {
         </div>
 
         <div className="space-y-1 col-span-2 sm:col-span-4 xl:col-span-4">
-          <Label htmlFor="comments" className="text-[10px] md:text-xs font-bold uppercase text-white/90">
+          <Label htmlFor="comments" className="text-[10px] md:text-xs font-bold uppercase text-primary-foreground/90">
             Comments
           </Label>
           <Textarea
@@ -349,7 +343,8 @@ export function QuickEntryBar() {
           <Button
             type="submit"
             size="default"
-            className="w-full h-8 md:h-9 text-xs md:text-sm font-semibold"
+            variant="secondary"
+            className="w-full h-8 md:h-9 text-xs md:text-sm font-semibold bg-white text-primary hover:bg-white/90 shadow-md"
             disabled={isSubmitting}
           >
             {isSubmitting ? '⏳ Adding...' : '➕ Add Entry'}

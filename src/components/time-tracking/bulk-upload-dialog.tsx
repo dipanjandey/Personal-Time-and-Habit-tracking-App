@@ -254,12 +254,12 @@ export function BulkUploadDialog({ open, onOpenChange }: BulkUploadDialogProps) 
             <div className="space-y-4 py-4">
               {/* Summary */}
               <div className="flex gap-4">
-                <div className="flex items-center gap-2 px-3 py-2 bg-green-500/10 text-green-700 rounded-md">
+                <div className="flex items-center gap-2 px-3 py-2 bg-success/10 text-success rounded-md">
                   <CheckCircle2 className="w-4 h-4" />
                   <span className="text-sm font-medium">{validEntries.length} valid entries</span>
                 </div>
                 {invalidEntries.length > 0 && (
-                  <div className="flex items-center gap-2 px-3 py-2 bg-red-500/10 text-red-700 rounded-md">
+                  <div className="flex items-center gap-2 px-3 py-2 bg-danger/10 text-danger rounded-md">
                     <XCircle className="w-4 h-4" />
                     <span className="text-sm font-medium">{invalidEntries.length} entries with errors</span>
                   </div>
@@ -268,7 +268,7 @@ export function BulkUploadDialog({ open, onOpenChange }: BulkUploadDialogProps) 
 
               {/* Warning for invalid entries */}
               {invalidEntries.length > 0 && (
-                <div className="flex items-start gap-2 p-3 bg-amber-500/10 text-amber-800 rounded-md">
+                <div className="flex items-start gap-2 p-3 bg-warning/10 text-warning-foreground rounded-md">
                   <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
                   <p className="text-sm">
                     Only valid entries will be added. Invalid entries will be skipped.
@@ -297,16 +297,16 @@ export function BulkUploadDialog({ open, onOpenChange }: BulkUploadDialogProps) 
                       {parsedEntries.map((entry) => (
                         <TableRow 
                           key={entry.rowNumber}
-                          className={entry.isValid ? '' : 'bg-red-500/5'}
+                          className={entry.isValid ? '' : 'bg-danger/5'}
                         >
                           <TableCell className="font-mono text-xs">{entry.rowNumber}</TableCell>
                           <TableCell>
                             {entry.isValid ? (
-                              <Badge variant="outline" className="bg-green-500/10 text-green-700 border-green-200">
+                              <Badge variant="outline" className="bg-success/10 text-success border-success/30">
                                 Valid
                               </Badge>
                             ) : (
-                              <Badge variant="outline" className="bg-red-500/10 text-red-700 border-red-200" title={entry.errors.join(', ')}>
+                              <Badge variant="outline" className="bg-danger/10 text-danger border-danger/30" title={entry.errors.join(', ')}>
                                 Error
                               </Badge>
                             )}
@@ -333,7 +333,7 @@ export function BulkUploadDialog({ open, onOpenChange }: BulkUploadDialogProps) 
                   <h4 className="text-sm font-medium text-muted-foreground">Error Details:</h4>
                   <div className="max-h-32 overflow-auto space-y-1 text-xs">
                     {invalidEntries.map((entry) => (
-                      <div key={entry.rowNumber} className="text-red-600">
+                      <div key={entry.rowNumber} className="text-danger">
                         <span className="font-medium">Row {entry.rowNumber}:</span>{' '}
                         {entry.errors.join('; ')}
                       </div>
@@ -355,7 +355,7 @@ export function BulkUploadDialog({ open, onOpenChange }: BulkUploadDialogProps) 
           {/* Step 4: Complete */}
           {step === 'complete' && (
             <div className="flex flex-col items-center justify-center py-12 space-y-4">
-              <CheckCircle2 className="w-12 h-12 text-green-500" />
+              <CheckCircle2 className="w-12 h-12 text-success" />
               <p className="text-lg font-medium">Successfully added {validEntries.length} entries!</p>
             </div>
           )}

@@ -5,15 +5,18 @@ import { QuickEntryBar } from '@/components/time-tracking/quick-entry-bar'
 import { SummaryCards } from '@/components/time-tracking/summary-cards'
 import { TimeEntriesTable } from '@/components/time-tracking/time-entries-table'
 import { BulkUploadDialog } from '@/components/time-tracking/bulk-upload-dialog'
+import { PomodoroTimer } from '@/components/time-tracking/pomodoro-timer'
 import { useTimeTrackingStore } from '@/store/time-tracking-store'
 import { useConfigStore } from '@/store/config-store'
 import { Button } from '@/components/ui/button'
-import { Download, Upload } from 'lucide-react'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { Download, Upload, Timer, ListTodo } from 'lucide-react'
 
 export default function TrackTimePage() {
   const { loadEntries, initializeRealtimeSubscription } = useTimeTrackingStore()
   const { loadWorkAreas, loadWorkTypes } = useConfigStore()
   const [bulkUploadOpen, setBulkUploadOpen] = useState(false)
+  const [activeTab, setActiveTab] = useState('entries')
 
   useEffect(() => {
     // Load initial data (user is already authenticated via middleware)
@@ -45,9 +48,38 @@ export default function TrackTimePage() {
         </div>
       </div>
 
-      <QuickEntryBar />
-      <SummaryCards />
-      <TimeEntriesTable />
+      {/* Main Tabs: Add an Entry, Pomodoro */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="h-11">
+          <TabsTrigger value="entries" className="gap-2 px-4">
+            <ListTodo className="w-4 h-4" />
+            <span className="hidden sm:inline">Add an Entry</span>
+            <span className="sm:hidden">Add</span>
+          </TabsTrigger>
+          <TabsTrigger value="pomodoro" className="gap-2 px-4">
+            <Timer className="w-4 h-4" />
+            Pomodoro
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="entries" className="space-y-6">
+          <QuickEntryBar />
+          <SummaryCards />
+          {/* Show only last 10 entries in compact mode */}
+          <TimeEntriesTable limit={10} showFilters={false} compact />
+        </TabsContent>
+
+        <TabsContent value="pomodoro" className="space-y-6">
+          <div className="max-w-2xl mx-auto">
+            <PomodoroTimer />
+          </div>
+          
+          {/* Show summary below the timer */}
+          <div className="mt-8">
+            <SummaryCards />
+          </div>
+        </TabsContent>
+      </Tabs>
 
       <BulkUploadDialog
         open={bulkUploadOpen}

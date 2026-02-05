@@ -35,11 +35,24 @@ export interface DailyTrend {
   pomodoros: number
 }
 
+export interface Insight {
+  title: string
+  value: string
+  icon: 'calendar' | 'target' | 'clock'
+}
+
+export interface TrendComparison {
+  totalDurationChange: number // percentage change
+  totalPomodorosChange: number // percentage change
+}
+
 export interface AnalyticsData {
   stats: TimeStats
   workAreaBreakdown: WorkAreaStats[]
   workTypeBreakdown: WorkTypeStats[]
   dailyTrends: DailyTrend[]
+  insights: Insight[]
+  trendComparison: TrendComparison
 }
 
 /**
@@ -197,6 +210,81 @@ export function calculateDailyTrends(
 }
 
 /**
+ * Get previous period date range for comparison
+ */
+export function getPreviousPeriodRange(period: TimePeriod, currentRange: DateRange): DateRange {
+  const duration = currentRange.to.getTime() - currentRange.from.getTime()
+  return {
+    from: new Date(currentRange.from.getTime() - duration - 1),
+    to: new Date(currentRange.from.getTime() - 1),
+  }
+}
+
+/**
+ * Calculate trend comparison with previous period
+ */
+export function calculateTrendComparison(
+  currentStats: TimeStats,
+  previousStats: TimeStats
+): TrendComparison {
+  const calcChange = (current: number, previous: number): number => {
+    if (previous === 0) return current > 0 ? 100 : 0
+    return ((current - previous) / previous) * 100
+  }
+
+  return {
+    totalDurationChange: calcChange(currentStats.totalDuration, previousStats.totalDuration),
+    totalPomodorosChange: calcChange(currentStats.totalPomodoros, previousStats.totalPomodoros),
+  }
+}
+
+/**
+ * Calculate insights from analytics data
+ */
+export function calculateInsights(
+  dailyTrends: DailyTrend[],
+  workAreaBreakdown: WorkAreaStats[]
+): Insight[] {
+  const insights: Insight[] = []
+
+  // Most productive day
+  const mostProductiveDay = dailyTrends.reduce((max, day) => 
+    day.duration > max.duration ? day : max, 
+    { date: '', duration: 0, pomodoros: 0 }
+  )
+  if (mostProductiveDay.duration > 0) {
+    const dayName = format(new Date(mostProductiveDay.date), 'EEEE')
+    insights.push({
+      title: 'Most Productive Day',
+      value: `${dayName} - ${formatDuration(mostProductiveDay.duration)}`,
+      icon: 'calendar',
+    })
+  }
+
+  // Top work area
+  if (workAreaBreakdown.length > 0) {
+    const topArea = workAreaBreakdown[0]
+    insights.push({
+      title: 'Top Work Area',
+      value: `${topArea.name} - ${formatPercentage(topArea.percentage)}`,
+      icon: 'target',
+    })
+  }
+
+  // Peak hours (simplified - based on most active day's data)
+  // For now, we'll show a placeholder since we don't have hourly data
+  if (dailyTrends.some(d => d.duration > 0)) {
+    insights.push({
+      title: 'Daily Average',
+      value: formatDuration(dailyTrends.reduce((sum, d) => sum + d.duration, 0) / Math.max(dailyTrends.filter(d => d.duration > 0).length, 1)),
+      icon: 'clock',
+    })
+  }
+
+  return insights
+}
+
+/**
  * Compute complete analytics data
  */
 export function computeAnalyticsData(
@@ -207,11 +295,27 @@ export function computeAnalyticsData(
   const dateRange = getDateRange(period, customRange)
   const filteredEntries = filterEntriesByDateRange(entries, dateRange)
 
+  const stats = calculateStats(filteredEntries)
+  const workAreaBreakdown = calculateWorkAreaBreakdown(filteredEntries)
+  const workTypeBreakdown = calculateWorkTypeBreakdown(filteredEntries)
+  const dailyTrends = calculateDailyTrends(filteredEntries, dateRange)
+
+  // Calculate previous period for comparison
+  const previousRange = getPreviousPeriodRange(period, dateRange)
+  const previousEntries = filterEntriesByDateRange(entries, previousRange)
+  const previousStats = calculateStats(previousEntries)
+  const trendComparison = calculateTrendComparison(stats, previousStats)
+
+  // Calculate insights
+  const insights = calculateInsights(dailyTrends, workAreaBreakdown)
+
   return {
-    stats: calculateStats(filteredEntries),
-    workAreaBreakdown: calculateWorkAreaBreakdown(filteredEntries),
-    workTypeBreakdown: calculateWorkTypeBreakdown(filteredEntries),
-    dailyTrends: calculateDailyTrends(filteredEntries, dateRange),
+    stats,
+    workAreaBreakdown,
+    workTypeBreakdown,
+    dailyTrends,
+    insights,
+    trendComparison,
   }
 }
 
@@ -235,10 +339,10 @@ export function formatPercentage(value: number): string {
 }
 
 /**
- * Format date for chart axis (e.g., "Jan 15")
+ * Format date for chart axis (e.g., "Feb 5, Wed")
  */
 export function formatChartDate(date: string | Date): string {
-  return format(new Date(date), 'MMM d')
+  return format(new Date(date), 'MMM d, EEE')
 }
 
 /**

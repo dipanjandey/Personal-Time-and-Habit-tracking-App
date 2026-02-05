@@ -1,0 +1,565 @@
+'use client'
+
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { Play, Pause, RotateCcw, Square, Clock } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
+import { useConfigStore } from '@/store/config-store'
+import { useTimeTrackingStore } from '@/store/time-tracking-store'
+import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
+
+type TimerMode = 'pomodoro' | 'shortBreak' | 'longBreak'
+
+interface TimerConfig {
+  pomodoro: number // in minutes
+  shortBreak: number
+  longBreak: number
+  longBreakInterval: number // number of pomodoros before long break
+}
+
+interface PomodoroSession {
+  mode: TimerMode
+  timeLeft: number
+  isRunning: boolean
+  startedAt: number | null // timestamp when started
+  selectedArea: string
+  selectedType: string
+  comments: string
+  completedPomodoros: number
+}
+
+const DEFAULT_CONFIG: TimerConfig = {
+  pomodoro: 25,
+  shortBreak: 5,
+  longBreak: 15,
+  longBreakInterval: 4,
+}
+
+const STORAGE_KEY = 'pomodoro-session'
+
+// Helper to get today's date in ISO format
+function getTodayISO(): string {
+  return new Date().toISOString().split('T')[0]
+}
+
+// Helper to format time as HH:mm
+function formatTimeHHMM(date: Date): string {
+  return date.toTimeString().slice(0, 5)
+}
+
+export function PomodoroTimer() {
+  const [mode, setMode] = useState<TimerMode>('pomodoro')
+  const [timeLeft, setTimeLeft] = useState(DEFAULT_CONFIG.pomodoro * 60)
+  const [isRunning, setIsRunning] = useState(false)
+  const [completedPomodoros, setCompletedPomodoros] = useState(0)
+  const [config] = useState<TimerConfig>(DEFAULT_CONFIG)
+  const [startedAt, setStartedAt] = useState<number | null>(null)
+  
+  // Form state for Area, Type, Comments
+  const [selectedArea, setSelectedArea] = useState<string>('')
+  const [selectedType, setSelectedType] = useState<string>('')
+  const [comments, setComments] = useState<string>('')
+  
+  // Validation state
+  const [showValidation, setShowValidation] = useState(false)
+  
+  const { workAreas, workTypes } = useConfigStore()
+  const { entries, addEntry } = useTimeTrackingStore()
+  
+  const intervalRef = useRef<NodeJS.Timeout | null>(null)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const hasRestoredRef = useRef(false)
+
+  // Get today's pomodoro entries
+  const todaysPomodoroEntries = entries.filter(
+    (entry) => entry.date === getTodayISO() && entry.pomodoros > 0
+  ).slice(0, 5) // Show max 5 recent entries
+
+  // Check if form is valid (Area + Type required)
+  const isFormValid = selectedArea !== '' && selectedType !== ''
+
+  // Initialize audio on mount
+  useEffect(() => {
+    audioRef.current = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2teleQMWaJu5t4uNOz4xf6baxNJrIS0wapW3t7ShdlM2Pmp5n7K0q5ZfNzNBYHKLl5iMbkkzMD5aboGLi4N0XEQ4OkpbbH6FhX5xYU9CR09cbXmAgoB5bGBVSk5WYm1zeHl4dG5oYltYWl9kaGxub29ta2hmZGNiY2VnaWpqa2ppaGdmZWRjY2NjY2NjY2NjY2JiYWFgYF9fX19eXl5eXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1d')
+  }, [])
+
+  // Restore session from localStorage on mount
+  useEffect(() => {
+    if (hasRestoredRef.current) return
+    hasRestoredRef.current = true
+
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY)
+      if (saved) {
+        const session: PomodoroSession = JSON.parse(saved)
+        
+        // Restore state
+        setMode(session.mode)
+        setSelectedArea(session.selectedArea)
+        setSelectedType(session.selectedType)
+        setComments(session.comments)
+        setCompletedPomodoros(session.completedPomodoros)
+        
+        if (session.isRunning && session.startedAt) {
+          // Calculate elapsed time since we left
+          const elapsed = Math.floor((Date.now() - session.startedAt) / 1000)
+          const remaining = session.timeLeft - elapsed
+          
+          if (remaining > 0) {
+            // Timer still has time left - resume
+            setTimeLeft(remaining)
+            setIsRunning(true)
+            setStartedAt(session.startedAt)
+          } else {
+            // Timer would have completed - handle completion
+            setTimeLeft(0)
+            // We'll handle completion in another effect
+          }
+        } else {
+          // Timer was paused - restore time left
+          setTimeLeft(session.timeLeft)
+          setStartedAt(session.startedAt)
+        }
+      }
+    } catch (error) {
+      console.error('Failed to restore pomodoro session:', error)
+    }
+  }, [])
+
+  // Persist session to localStorage
+  useEffect(() => {
+    const session: PomodoroSession = {
+      mode,
+      timeLeft,
+      isRunning,
+      startedAt,
+      selectedArea,
+      selectedType,
+      comments,
+      completedPomodoros,
+    }
+    
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(session))
+    } catch (error) {
+      console.error('Failed to save pomodoro session:', error)
+    }
+  }, [mode, timeLeft, isRunning, startedAt, selectedArea, selectedType, comments, completedPomodoros])
+
+  // Get initial time for current mode
+  const getInitialTime = useCallback((timerMode: TimerMode) => {
+    switch (timerMode) {
+      case 'pomodoro':
+        return config.pomodoro * 60
+      case 'shortBreak':
+        return config.shortBreak * 60
+      case 'longBreak':
+        return config.longBreak * 60
+      default:
+        return config.pomodoro * 60
+    }
+  }, [config])
+
+  // Save completed pomodoro to time entries
+  const saveCompletedPomodoro = useCallback(async () => {
+    if (mode !== 'pomodoro') return // Don't save breaks
+    
+    const now = new Date()
+    const durationMinutes = config.pomodoro
+    const startTime = new Date(now.getTime() - durationMinutes * 60 * 1000)
+    
+    try {
+      await addEntry({
+        startTime: formatTimeHHMM(startTime),
+        endTime: formatTimeHHMM(now),
+        workArea: selectedArea,
+        workType: selectedType,
+        pomodoros: 1,
+        comments: comments,
+        date: getTodayISO(),
+        duration: durationMinutes,
+        userId: '', // Will be set by the store/supabase
+      })
+      
+      toast.success('Pomodoro completed!', {
+        description: `${durationMinutes} min • ${selectedArea} • ${selectedType}`,
+      })
+    } catch (error) {
+      console.error('Failed to save pomodoro entry:', error)
+      toast.error('Failed to save entry', {
+        description: 'Please try again or add manually.',
+      })
+    }
+  }, [mode, config.pomodoro, selectedArea, selectedType, comments, addEntry])
+
+  // Handle timer completion
+  const handleTimerComplete = useCallback(async () => {
+    setIsRunning(false)
+    setStartedAt(null)
+    
+    // Play notification sound
+    if (audioRef.current) {
+      audioRef.current.play().catch(() => {
+        // Audio play failed, likely due to autoplay restrictions
+      })
+    }
+
+    // Save entry if it was a pomodoro (not a break)
+    if (mode === 'pomodoro') {
+      const newCount = completedPomodoros + 1
+      setCompletedPomodoros(newCount)
+      await saveCompletedPomodoro()
+      
+      // Check if it's time for a long break
+      if (newCount % config.longBreakInterval === 0) {
+        setMode('longBreak')
+        setTimeLeft(config.longBreak * 60)
+      } else {
+        setMode('shortBreak')
+        setTimeLeft(config.shortBreak * 60)
+      }
+    } else {
+      // After any break, go back to pomodoro
+      setMode('pomodoro')
+      setTimeLeft(config.pomodoro * 60)
+    }
+  }, [mode, completedPomodoros, config, saveCompletedPomodoro])
+
+  // Reset timer when mode changes manually
+  useEffect(() => {
+    // Don't reset if we're restoring from storage
+    if (hasRestoredRef.current && !isRunning) {
+      // Only reset if mode changed and timer is not running
+    }
+  }, [mode, isRunning])
+
+  // Timer countdown logic
+  useEffect(() => {
+    if (isRunning && timeLeft > 0) {
+      intervalRef.current = setInterval(() => {
+        setTimeLeft((prev) => prev - 1)
+      }, 1000)
+    } else if (timeLeft === 0 && isRunning) {
+      // Timer completed
+      handleTimerComplete()
+    }
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+      }
+    }
+  }, [isRunning, timeLeft, handleTimerComplete])
+
+  const handleStart = () => {
+    if (!isFormValid) {
+      setShowValidation(true)
+      toast.error('Please select Area and Type', {
+        description: 'Both fields are required to start the timer.',
+      })
+      return
+    }
+    
+    setShowValidation(false)
+    setIsRunning(true)
+    setStartedAt(Date.now())
+  }
+
+  const handlePause = () => {
+    setIsRunning(false)
+    // Keep startedAt to track total session time
+  }
+
+  const handleReset = () => {
+    setIsRunning(false)
+    setStartedAt(null)
+    setTimeLeft(getInitialTime(mode))
+    // Don't save - user explicitly reset
+  }
+
+  const handleStop = async () => {
+    // Stop and complete the current cycle
+    setIsRunning(false)
+    setStartedAt(null)
+    
+    // Play notification sound
+    if (audioRef.current) {
+      audioRef.current.play().catch(() => {
+        // Audio play failed, likely due to autoplay restrictions
+      })
+    }
+    
+    if (mode === 'pomodoro') {
+      // Complete the pomodoro - save entry and move to break
+      const newCount = completedPomodoros + 1
+      setCompletedPomodoros(newCount)
+      await saveCompletedPomodoro()
+      
+      // Move to appropriate break
+      if (newCount % config.longBreakInterval === 0) {
+        setMode('longBreak')
+        setTimeLeft(config.longBreak * 60)
+      } else {
+        setMode('shortBreak')
+        setTimeLeft(config.shortBreak * 60)
+      }
+    } else {
+      // Complete break, go to pomodoro
+      setMode('pomodoro')
+      setTimeLeft(config.pomodoro * 60)
+    }
+  }
+
+  const handleModeChange = (newMode: string) => {
+    if (isRunning) {
+      // Don't allow mode change while running
+      return
+    }
+    setMode(newMode as TimerMode)
+    setTimeLeft(getInitialTime(newMode as TimerMode))
+    setStartedAt(null)
+  }
+
+  // Format time as MM:SS
+  const formatTime = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+  }
+
+  // Calculate progress percentage
+  const progress = ((getInitialTime(mode) - timeLeft) / getInitialTime(mode)) * 100
+
+  return (
+    <Card className="border-timer-border bg-timer-bg overflow-hidden">
+      <CardContent className="p-0">
+        {/* Progress bar at top */}
+        <div className="h-1 bg-muted">
+          <div 
+            className="h-full bg-primary transition-all duration-1000 ease-linear"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+
+        <div className="p-6 md:p-8">
+          {/* Mode Tabs */}
+          <Tabs value={mode} onValueChange={handleModeChange} className="mb-6">
+            <TabsList className="w-full grid grid-cols-3 h-12 bg-muted/50">
+              <TabsTrigger 
+                value="pomodoro" 
+                disabled={isRunning}
+                className="text-sm md:text-base data-[state=active]:bg-primary data-[state=active]:text-primary-foreground disabled:opacity-50"
+              >
+                Pomodoro
+              </TabsTrigger>
+              <TabsTrigger 
+                value="shortBreak"
+                disabled={isRunning}
+                className="text-sm md:text-base data-[state=active]:bg-primary data-[state=active]:text-primary-foreground disabled:opacity-50"
+              >
+                Short Break
+              </TabsTrigger>
+              <TabsTrigger 
+                value="longBreak"
+                disabled={isRunning}
+                className="text-sm md:text-base data-[state=active]:bg-primary data-[state=active]:text-primary-foreground disabled:opacity-50"
+              >
+                Long Break
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          {/* Timer Display */}
+          <div className="text-center mb-6">
+            <div 
+              className={cn(
+                "text-7xl md:text-8xl lg:text-9xl font-bold tracking-tight font-mono",
+                "text-foreground transition-colors"
+              )}
+            >
+              {formatTime(timeLeft)}
+            </div>
+          </div>
+
+          {/* Controls */}
+          <div className="flex items-center justify-center gap-4 mb-6">
+            {isRunning ? (
+              <>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={handleReset}
+                  className="h-14 px-6"
+                >
+                  <RotateCcw className="w-5 h-5" />
+                </Button>
+                <Button
+                  size="lg"
+                  onClick={handlePause}
+                  className="h-16 px-12 text-xl font-bold shadow-lg"
+                >
+                  <Pause className="w-6 h-6 mr-2" />
+                  PAUSE
+                </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={handleStop}
+                  className="h-14 px-6"
+                  title="Stop & Complete"
+                >
+                  <Square className="w-5 h-5" />
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={handleReset}
+                  className="h-14 px-6"
+                  disabled={timeLeft === getInitialTime(mode)}
+                >
+                  <RotateCcw className="w-5 h-5" />
+                </Button>
+                <Button
+                  size="lg"
+                  onClick={handleStart}
+                  className="h-16 px-12 text-xl font-bold shadow-lg"
+                >
+                  <Play className="w-6 h-6 mr-2" />
+                  START
+                </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={handleStop}
+                  className="h-14 px-6"
+                  disabled={timeLeft === getInitialTime(mode)}
+                  title="Stop & Complete"
+                >
+                  <Square className="w-5 h-5" />
+                </Button>
+              </>
+            )}
+          </div>
+
+          {/* Area, Type, Comments Form */}
+          <div className="border-t pt-6 mt-2 space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Area Select */}
+              <div className="space-y-2">
+                <Label htmlFor="area" className="text-sm font-medium">
+                  Area <span className="text-destructive">*</span>
+                </Label>
+                <Select 
+                  value={selectedArea} 
+                  onValueChange={setSelectedArea}
+                  disabled={isRunning}
+                >
+                  <SelectTrigger 
+                    id="area"
+                    className={cn(
+                      showValidation && !selectedArea && "border-destructive ring-destructive"
+                    )}
+                  >
+                    <SelectValue placeholder="Select area..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {workAreas.map((area) => (
+                      <SelectItem key={area.id} value={area.name}>
+                        {area.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {showValidation && !selectedArea && (
+                  <p className="text-xs text-destructive">Area is required</p>
+                )}
+              </div>
+
+              {/* Type Select */}
+              <div className="space-y-2">
+                <Label htmlFor="type" className="text-sm font-medium">
+                  Type <span className="text-destructive">*</span>
+                </Label>
+                <Select 
+                  value={selectedType} 
+                  onValueChange={setSelectedType}
+                  disabled={isRunning}
+                >
+                  <SelectTrigger 
+                    id="type"
+                    className={cn(
+                      showValidation && !selectedType && "border-destructive ring-destructive"
+                    )}
+                  >
+                    <SelectValue placeholder="Select type..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {workTypes.map((type) => (
+                      <SelectItem key={type.id} value={type.name}>
+                        {type.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {showValidation && !selectedType && (
+                  <p className="text-xs text-destructive">Type is required</p>
+                )}
+              </div>
+            </div>
+
+            {/* Comments */}
+            <div className="space-y-2">
+              <Label htmlFor="comments" className="text-sm font-medium">Comments</Label>
+              <Textarea
+                id="comments"
+                placeholder="What are you working on?"
+                value={comments}
+                onChange={(e) => setComments(e.target.value)}
+                className="resize-none"
+                rows={2}
+                disabled={isRunning}
+              />
+            </div>
+          </div>
+
+          {/* Recent Sessions */}
+          {todaysPomodoroEntries.length > 0 && (
+            <div className="border-t pt-6 mt-6">
+              <h3 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
+                <Clock className="w-4 h-4" />
+                Recent Sessions (Today)
+              </h3>
+              <div className="space-y-2">
+                {todaysPomodoroEntries.map((entry) => (
+                  <div 
+                    key={entry.id}
+                    className="flex items-center justify-between py-2 px-3 bg-muted/50 rounded-lg text-sm"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">🍅</span>
+                      <span className="font-medium">{entry.workArea}</span>
+                      <span className="text-muted-foreground">•</span>
+                      <span className="text-muted-foreground">{entry.workType}</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-muted-foreground">
+                      <span>{entry.duration} min</span>
+                      <span>{entry.startTime}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}

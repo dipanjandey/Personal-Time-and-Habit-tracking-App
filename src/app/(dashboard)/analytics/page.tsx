@@ -1,20 +1,12 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import { BarChart, Clock, Target, TrendingUp } from 'lucide-react'
+import { Clock, Target, Download, ChevronDown, ChevronUp } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 import {
   ChartContainer,
   ChartTooltip,
@@ -23,18 +15,17 @@ import {
 import {
   BarChart as RechartsBarChart,
   Bar,
-  LineChart as RechartsLineChart,
-  Line,
   PieChart,
   Pie,
   Cell,
   XAxis,
   YAxis,
   CartesianGrid,
-  Legend,
+  LabelList,
   ResponsiveContainer,
 } from 'recharts'
 import { StatCard } from '@/components/analytics/stat-card'
+import { InsightCard } from '@/components/analytics/insight-card'
 import { useAnalyticsData } from '@/hooks/use-analytics-data'
 import { useTimeTrackingStore } from '@/store/time-tracking-store'
 import { useConfigStore } from '@/store/config-store'
@@ -46,20 +37,23 @@ import {
   type TimePeriod,
   type DateRange,
 } from '@/lib/analytics-utils'
-import { format } from 'date-fns'
+import { useChartColors } from '@/hooks/use-chart-colors'
 
-const CHART_COLORS = [
-  'hsl(var(--chart-1))',
-  'hsl(var(--chart-2))',
-  'hsl(var(--chart-3))',
-  'hsl(var(--chart-4))',
-  'hsl(var(--chart-5))',
-]
+// Format duration for Y-axis (convert minutes to hours)
+function formatYAxisDuration(minutes: number): string {
+  const hours = minutes / 60
+  if (hours < 1) return `${Math.round(minutes)}m`
+  return `${hours.toFixed(1)}h`
+}
 
 export default function AnalyticsPage() {
   const [period, setPeriod] = useState<TimePeriod>('week')
   const [dateFrom, setDateFrom] = useState<Date>()
   const [dateTo, setDateTo] = useState<Date>()
+  const [workAreaExpanded, setWorkAreaExpanded] = useState(false)
+  
+  // Get computed chart colors (adapts to light/dark mode)
+  const CHART_COLORS = useChartColors()
 
   const { loadEntries } = useTimeTrackingStore()
   const { loadWorkAreas, loadWorkTypes } = useConfigStore()
@@ -83,16 +77,42 @@ export default function AnalyticsPage() {
     period === 'custom' ? customDateRange : undefined
   )
 
-  const { stats, workAreaBreakdown, workTypeBreakdown, dailyTrends } = analyticsData
+  const { stats, workAreaBreakdown, workTypeBreakdown, dailyTrends, insights, trendComparison } = analyticsData
+
+  // Prepare pie chart data with legend
+  const maxVisibleAreas = 5
+  const pieDataForChart = workAreaBreakdown.slice(0, maxVisibleAreas).map((item, index) => ({
+    ...item,
+    fill: CHART_COLORS[index % CHART_COLORS.length],
+  }))
+  
+  // Legend data - show all when expanded, otherwise show top 5
+  const legendData = workAreaExpanded 
+    ? workAreaBreakdown.map((item, index) => ({
+        ...item,
+        fill: CHART_COLORS[index % CHART_COLORS.length],
+      }))
+    : pieDataForChart
+
+  // Get trend label based on period
+  const getTrendLabel = () => {
+    switch (period) {
+      case 'today': return 'vs yesterday'
+      case 'week': return 'vs last week'
+      case 'month': return 'vs last month'
+      default: return 'vs previous period'
+    }
+  }
 
   return (
-    <div className="p-8">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8 pb-4 border-b">
-        <div className="flex items-center gap-3">
-          <BarChart className="w-8 h-8" />
-          <h1 className="text-3xl font-bold">Analytics</h1>
-        </div>
+    <div className="p-4 md:p-6 lg:p-8 overflow-x-hidden">
+      {/* Header - Consistent with Track Time page */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 md:mb-8 pb-4 border-b">
+        <h1 className="text-3xl font-bold">Analytics</h1>
+        <Button variant="outline">
+          <Download className="w-4 h-4 mr-2" />
+          Export Report
+        </Button>
       </div>
 
       {/* Time Period Selector */}
@@ -101,7 +121,7 @@ export default function AnalyticsPage() {
         onValueChange={(value) => setPeriod(value as TimePeriod)}
         className="mb-8"
       >
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 flex-wrap">
           <TabsList>
             <TabsTrigger value="today">Today</TabsTrigger>
             <TabsTrigger value="week">This Week</TabsTrigger>
@@ -149,84 +169,131 @@ export default function AnalyticsPage() {
         </div>
       </Tabs>
 
-      {/* Summary Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      {/* Summary Statistics Cards - Only 2 key metrics with trends */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <StatCard
           title="Total Time Tracked"
           value={formatDuration(stats.totalDuration)}
           icon={Clock}
+          trend={trendComparison.totalDurationChange}
+          trendLabel={getTrendLabel()}
         />
         <StatCard
           title="Total Pomodoros"
           value={stats.totalPomodoros.toString()}
           icon={Target}
-        />
-        <StatCard
-          title="Average Session"
-          value={formatDuration(stats.averageSessionDuration)}
-          icon={TrendingUp}
-        />
-        <StatCard
-          title="Total Sessions"
-          value={stats.totalSessions.toString()}
-          icon={BarChart}
+          trend={trendComparison.totalPomodorosChange}
+          trendLabel={getTrendLabel()}
         />
       </div>
 
+      {/* Quick Insights Section */}
+      {insights.length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-lg font-semibold mb-4">Quick Insights</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {insights.map((insight, index) => (
+              <InsightCard
+                key={index}
+                title={insight.title}
+                value={insight.value}
+                icon={insight.icon}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* Work Area Distribution */}
+        {/* Work Area Distribution - Donut with Legend */}
         <Card>
           <CardHeader>
             <CardTitle>Time by Work Area</CardTitle>
           </CardHeader>
           <CardContent>
             {workAreaBreakdown.length > 0 ? (
-              <ChartContainer
-                config={workAreaBreakdown.reduce((acc, item, index) => {
-                  acc[item.name] = {
-                    label: item.name,
-                    color: CHART_COLORS[index % CHART_COLORS.length],
-                  }
-                  return acc
-                }, {} as Record<string, { label: string; color: string }>)}
-                className="h-[300px]"
-              >
-                <PieChart>
-                  <ChartTooltip
-                    content={
-                      <ChartTooltipContent
-                        formatter={(value) => formatDuration(value as number)}
-                      />
+              <div className="flex flex-col lg:flex-row items-center gap-6">
+                <ChartContainer
+                  config={pieDataForChart.reduce((acc, item) => {
+                    acc[item.name] = {
+                      label: item.name,
+                      color: item.fill,
                     }
-                  />
-                  <Pie
-                    data={workAreaBreakdown}
-                    dataKey="duration"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={100}
-                    label={(entry) => `${entry.name} (${formatPercentage(entry.percentage)})`}
-                  >
-                    {workAreaBreakdown.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={CHART_COLORS[index % CHART_COLORS.length]}
+                    return acc
+                  }, {} as Record<string, { label: string; color: string }>)}
+                  className="h-[200px] w-[200px] flex-shrink-0"
+                >
+                  <PieChart>
+                    <ChartTooltip
+                      content={
+                        <ChartTooltipContent
+                          formatter={(value) => formatDuration(value as number)}
+                        />
+                      }
+                    />
+                    <Pie
+                      data={pieDataForChart}
+                      dataKey="duration"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={50}
+                      outerRadius={80}
+                    >
+                      {pieDataForChart.map((entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={entry.fill}
+                        />
+                      ))}
+                    </Pie>
+                  </PieChart>
+                </ChartContainer>
+                {/* External Legend */}
+                <div className="flex flex-col gap-2 flex-1 min-w-0">
+                  {legendData.map((item, index) => (
+                    <div key={index} className="flex items-start gap-2 text-sm">
+                      <div 
+                        className="w-3 h-3 rounded-sm flex-shrink-0 mt-0.5" 
+                        style={{ backgroundColor: item.fill }}
                       />
-                    ))}
-                  </Pie>
-                </PieChart>
-              </ChartContainer>
+                      <span className="flex-1 min-w-0">{item.name}</span>
+                      <span className="text-muted-foreground flex-shrink-0">{formatPercentage(item.percentage)}</span>
+                    </div>
+                  ))}
+                  {workAreaBreakdown.length > maxVisibleAreas && (
+                    <button
+                      onClick={() => setWorkAreaExpanded(!workAreaExpanded)}
+                      className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 mt-1 transition-colors"
+                    >
+                      {workAreaExpanded ? (
+                        <>
+                          <ChevronUp className="w-3 h-3" />
+                          Show less
+                        </>
+                      ) : (
+                        <>
+                          <ChevronDown className="w-3 h-3" />
+                          Show all ({workAreaBreakdown.length - maxVisibleAreas} more)
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
+              </div>
             ) : (
-              <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                No data available for this period
+              <div className="h-[200px] flex items-center justify-center text-muted-foreground">
+                <div className="text-center">
+                  <p>No data available for this period</p>
+                  <p className="text-sm mt-1">Start tracking time to see your work area distribution</p>
+                </div>
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Work Type Distribution */}
+        {/* Work Type Distribution - Bar Chart with Colors */}
         <Card>
           <CardHeader>
             <CardTitle>Time by Work Type</CardTitle>
@@ -241,12 +308,23 @@ export default function AnalyticsPage() {
                   }
                   return acc
                 }, {} as Record<string, { label: string; color: string }>)}
-                className="h-[300px]"
+                className="h-[250px] w-full"
               >
                 <RechartsBarChart data={workTypeBreakdown}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis 
+                    dataKey="name" 
+                    tick={{ fontSize: 12 }}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <YAxis 
+                    tickFormatter={formatYAxisDuration}
+                    tick={{ fontSize: 12 }}
+                    tickLine={false}
+                    axisLine={false}
+                    label={{ value: 'Hours', angle: -90, position: 'insideLeft', style: { fontSize: 12 } }}
+                  />
                   <ChartTooltip
                     content={
                       <ChartTooltipContent
@@ -261,41 +339,59 @@ export default function AnalyticsPage() {
                         fill={CHART_COLORS[index % CHART_COLORS.length]}
                       />
                     ))}
+                    <LabelList
+                      dataKey="duration"
+                      position="top"
+                      formatter={(value: number) => formatYAxisDuration(value)}
+                      className="fill-foreground text-xs"
+                    />
                   </Bar>
                 </RechartsBarChart>
               </ChartContainer>
             ) : (
-              <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                No data available for this period
+              <div className="h-[250px] flex items-center justify-center text-muted-foreground">
+                <div className="text-center">
+                  <p>No data available for this period</p>
+                  <p className="text-sm mt-1">Start tracking time to see your work type breakdown</p>
+                </div>
               </div>
             )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Productivity Trends */}
+      {/* Daily Productivity Trend - Now a Bar Chart */}
       <Card className="mb-8">
         <CardHeader>
-          <CardTitle>Daily Productivity Trend</CardTitle>
+          <CardTitle>Daily Productivity</CardTitle>
         </CardHeader>
         <CardContent>
-          {dailyTrends.length > 0 ? (
+          {dailyTrends.length > 0 && dailyTrends.some(d => d.duration > 0) ? (
             <ChartContainer
               config={{
                 duration: {
-                  label: 'Duration',
-                  color: 'hsl(var(--chart-1))',
+                  label: 'Hours Tracked',
+                  color: CHART_COLORS[0],
                 },
               }}
-              className="h-[300px]"
+              className="h-[250px] w-full"
             >
-              <RechartsLineChart data={dailyTrends}>
-                <CartesianGrid strokeDasharray="3 3" />
+              <RechartsBarChart data={dailyTrends}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                 <XAxis
                   dataKey="date"
                   tickFormatter={formatChartDate}
+                  tick={{ fontSize: 12 }}
+                  tickLine={false}
+                  axisLine={false}
                 />
-                <YAxis />
+                <YAxis 
+                  tickFormatter={formatYAxisDuration}
+                  tick={{ fontSize: 12 }}
+                  tickLine={false}
+                  axisLine={false}
+                  label={{ value: 'Hours', angle: -90, position: 'insideLeft', style: { fontSize: 12 } }}
+                />
                 <ChartTooltip
                   content={
                     <ChartTooltipContent
@@ -304,92 +400,26 @@ export default function AnalyticsPage() {
                     />
                   }
                 />
-                <Line
-                  type="monotone"
+                <Bar
                   dataKey="duration"
-                  stroke="hsl(var(--chart-1))"
-                  strokeWidth={2}
-                  dot={{ fill: 'hsl(var(--chart-1))' }}
-                />
-              </RechartsLineChart>
+                  fill={CHART_COLORS[0]}
+                  radius={[4, 4, 0, 0]}
+                >
+                  <LabelList
+                    dataKey="duration"
+                    position="top"
+                    formatter={(value: number) => formatYAxisDuration(value)}
+                    className="fill-foreground text-xs"
+                  />
+                </Bar>
+              </RechartsBarChart>
             </ChartContainer>
           ) : (
-            <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-              No data available for this period
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Detailed Breakdown Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Detailed Breakdown</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {workAreaBreakdown.length > 0 ? (
-            <div className="space-y-8">
-              {/* Work Area Breakdown */}
-              <div>
-                <h3 className="text-lg font-semibold mb-4">By Work Area</h3>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Work Area</TableHead>
-                      <TableHead className="text-right">Time Spent</TableHead>
-                      <TableHead className="text-right">Pomodoros</TableHead>
-                      <TableHead className="text-right">Percentage</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {workAreaBreakdown.map((item) => (
-                      <TableRow key={item.name}>
-                        <TableCell className="font-medium">{item.name}</TableCell>
-                        <TableCell className="text-right">
-                          {formatDuration(item.duration)}
-                        </TableCell>
-                        <TableCell className="text-right">{item.pomodoros}</TableCell>
-                        <TableCell className="text-right">
-                          {formatPercentage(item.percentage)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+            <div className="h-[250px] flex items-center justify-center text-muted-foreground">
+              <div className="text-center">
+                <p>No data available for this period</p>
+                <p className="text-sm mt-1">Start tracking time to see your daily productivity trends</p>
               </div>
-
-              {/* Work Type Breakdown */}
-              <div>
-                <h3 className="text-lg font-semibold mb-4">By Work Type</h3>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Work Type</TableHead>
-                      <TableHead className="text-right">Time Spent</TableHead>
-                      <TableHead className="text-right">Pomodoros</TableHead>
-                      <TableHead className="text-right">Percentage</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {workTypeBreakdown.map((item) => (
-                      <TableRow key={item.name}>
-                        <TableCell className="font-medium">{item.name}</TableCell>
-                        <TableCell className="text-right">
-                          {formatDuration(item.duration)}
-                        </TableCell>
-                        <TableCell className="text-right">{item.pomodoros}</TableCell>
-                        <TableCell className="text-right">
-                          {formatPercentage(item.percentage)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </div>
-          ) : (
-            <div className="py-8 text-center text-muted-foreground">
-              No data available for this period
             </div>
           )}
         </CardContent>

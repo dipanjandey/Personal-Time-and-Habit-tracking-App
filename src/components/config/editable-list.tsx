@@ -117,10 +117,10 @@ function SortableItem({
             onClick={onSaveEdit}
             disabled={!editingName.trim()}
           >
-            <Check className="w-4 h-4 text-green-600" />
+            <Check className="w-4 h-4 text-success" />
           </Button>
           <Button size="icon" variant="ghost" onClick={onCancelEdit}>
-            <X className="w-4 h-4 text-red-600" />
+            <X className="w-4 h-4 text-danger" />
           </Button>
         </>
       ) : (

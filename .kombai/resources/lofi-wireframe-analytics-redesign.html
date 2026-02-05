@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Analytics Page Redesign - Wireframe</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+    }
+    body {
+      background: #fff;
+      padding: 24px;
+      color: #333;
+    }
+    .wireframe-header {
+      background: #f5f5f5;
+      border: 2px dashed #999;
+      padding: 16px;
+      margin-bottom: 24px;
+      border-radius: 8px;
+    }
+    .wireframe-header h1 {
+      font-size: 20px;
+      color: #333;
+      margin-bottom: 8px;
+    }
+    .wireframe-header p {
+      font-size: 14px;
+      color: #666;
+    }
+    .page-container {
+      display: flex;
+      gap: 0;
+      min-height: 100vh;
+    }
+    .sidebar {
+      width: 240px;
+      background: #f5f5f5;
+      border: 2px solid #ccc;
+      padding: 16px;
+      flex-shrink: 0;
+    }
+    .sidebar-logo {
+      font-weight: bold;
+      padding: 12px 0;
+      border-bottom: 1px dashed #999;
+      margin-bottom: 16px;
+    }
+    .sidebar-nav a {
+      display: block;
+      padding: 10px 8px;
+      color: #333;
+      text-decoration: none;
+      border-radius: 4px;
+      margin-bottom: 4px;
+    }
+    .sidebar-nav a.active {
+      background: #e0e0e0;
+      font-weight: bold;
+    }
+    .main-content {
+      flex: 1;
+      padding: 24px;
+      background: #fff;
+    }
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 2px dashed #ccc;
+    }
+    .page-title {
+      font-size: 28px;
+      color: #333;
+    }
+    
+    /* Reuse badge styles */
+    .reuse-badge {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: #4CAF50;
+      color: white;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-family: Arial, sans-serif;
+      font-weight: bold;
+      z-index: 10;
+    }
+    .new-badge {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: #FF9800;
+      color: white;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-family: Arial, sans-serif;
+      font-weight: bold;
+      z-index: 10;
+    }
+    .component-wrapper {
+      position: relative;
+      display: inline-block;
+    }
+    .component-wrapper-block {
+      position: relative;
+    }
+    
+    /* Time period tabs */
+    .tabs-container {
+      position: relative;
+      margin-bottom: 24px;
+    }
+    .tabs {
+      display: flex;
+      gap: 4px;
+      background: #f5f5f5;
+      padding: 4px;
+      border-radius: 8px;
+      width: fit-content;
+      border: 2px solid #ccc;
+    }
+    .tab {
+      padding: 8px 16px;
+      border-radius: 6px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .tab.active {
+      background: #fff;
+      border: 1px solid #999;
+    }
+    
+    /* Stats grid - improved */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: #fff;
+      border: 2px solid #ccc;
+      border-radius: 8px;
+      padding: 20px;
+      position: relative;
+    }
+    .stat-card-label {
+      font-size: 12px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .stat-card-value {
+      font-size: 32px;
+      font-weight: bold;
+      margin: 8px 0;
+    }
+    .stat-card-trend {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+    }
+    .trend-up {
+      color: #4CAF50;
+    }
+    .trend-down {
+      color: #f44336;
+    }
+    .stat-icon {
+      position: absolute;
+      right: 16px;
+      top: 16px;
+      width: 40px;
+      height: 40px;
+      background: #f5f5f5;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #666;
+    }
+    
+    /* Charts grid */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+    .chart-card {
+      background: #fff;
+      border: 2px solid #ccc;
+      border-radius: 8px;
+      padding: 20px;
+      position: relative;
+    }
+    .chart-card-full {
+      grid-column: span 2;
+    }
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .chart-title {
+      font-size: 16px;
+      font-weight: bold;
+    }
+    .chart-legend {
+      display: flex;
+      gap: 12px;
+      font-size: 12px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+    
+    /* Donut chart placeholder */
+    .donut-chart {
+      width: 200px;
+      height: 200px;
+      margin: 0 auto;
+      position: relative;
+    }
+    .donut-ring {
+      width: 100%;
+      height: 100%;
+      border: 30px solid;
+      border-radius: 50%;
+      border-color: #666 #999 #ccc #333;
+      position: relative;
+    }
+    .donut-center {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+    }
+    .donut-center-value {
+      font-size: 24px;
+      font-weight: bold;
+    }
+    .donut-center-label {
+      font-size: 12px;
+      color: #666;
+    }
+    
+    /* Bar chart placeholder - improved */
+    .bar-chart {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-around;
+      height: 180px;
+      border-left: 2px solid #ccc;
+      border-bottom: 2px solid #ccc;
+      padding: 0 16px;
+      margin-top: 16px;
+    }
+    .bar-group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .bar {
+      width: 40px;
+      border-radius: 4px 4px 0 0;
+    }
+    .bar-label {
+      font-size: 10px;
+      color: #666;
+    }
+    
+    /* Daily trend bar chart */
+    .trend-bar-chart {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      height: 180px;
+      border-left: 2px solid #ccc;
+      border-bottom: 2px solid #ccc;
+      padding: 0 8px;
+      margin-top: 16px;
+      gap: 4px;
+    }
+    .trend-bar {
+      flex: 1;
+      max-width: 50px;
+      border-radius: 4px 4px 0 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .trend-bar-fill {
+      width: 100%;
+      border-radius: 4px 4px 0 0;
+      background: #666;
+    }
+    .trend-bar-label {
+      font-size: 10px;
+      color: #666;
+      margin-top: 4px;
+    }
+    
+    /* Legend for pie chart */
+    .pie-legend {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 16px;
+    }
+    .pie-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+    }
+    .pie-legend-color {
+      width: 12px;
+      height: 12px;
+      border-radius: 2px;
+    }
+    .pie-legend-text {
+      flex: 1;
+    }
+    .pie-legend-value {
+      color: #666;
+    }
+    
+    /* Quick insights section */
+    .insights-section {
+      margin-bottom: 24px;
+    }
+    .insights-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    .insight-card {
+      background: #f5f5f5;
+      border: 2px dashed #ccc;
+      border-radius: 8px;
+      padding: 16px;
+      position: relative;
+    }
+    .insight-icon {
+      width: 32px;
+      height: 32px;
+      background: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 12px;
+      border: 1px solid #ccc;
+    }
+    .insight-title {
+      font-size: 14px;
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+    .insight-value {
+      font-size: 12px;
+      color: #666;
+    }
+    
+    /* Section header */
+    .section-header {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px dashed #ccc;
+    }
+    
+    /* Annotations */
+    .annotation {
+      background: #fffde7;
+      border: 1px solid #ffd600;
+      border-radius: 4px;
+      padding: 8px 12px;
+      font-size: 12px;
+      margin-top: 8px;
+      color: #333;
+    }
+    .annotation strong {
+      color: #f57c00;
+    }
+  </style>
+</head>
+<body>
+  <div class="wireframe-header">
+    <h1>Analytics Page Redesign - Wireframe</h1>
+    <p>Improved layout with better visual hierarchy, actionable insights, and clearer data visualization. 
+    Key changes: Removed redundant metrics, added trend comparisons, donut chart with legend, bar chart for daily trends.</p>
+  </div>
+
+  <div class="page-container">
+    <!-- Sidebar -->
+    <!-- REUSABLE: Sidebar from src/components/ui/sidebar.tsx -->
+    <div class="component-wrapper-block">
+      <span class="reuse-badge" title="src/components/ui/sidebar.tsx">[REUSE] Sidebar</span>
+      <div class="sidebar">
+        <div class="sidebar-logo">⏱ Habit & Time Tracker</div>
+        <nav class="sidebar-nav">
+          <a href="#">Track Time</a>
+          <a href="#">Configure</a>
+          <a href="#" class="active">Analytics</a>
+          <a href="#">Reports</a>
+          <a href="#">Journal</a>
+        </nav>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <!-- Page Header - Consistent with other pages -->
+      <div class="page-header">
+        <h1 class="page-title">Analytics</h1>
+        <div class="component-wrapper">
+          <span class="reuse-badge" title="src/components/ui/button.tsx">[REUSE] Button</span>
+          <button style="padding: 8px 16px; border: 2px solid #ccc; border-radius: 6px; background: #fff; cursor: pointer;">
+            ↓ Export Report
+          </button>
+        </div>
+      </div>
+
+      <!-- Time Period Selector -->
+      <div class="tabs-container">
+        <div class="component-wrapper-block">
+          <span class="reuse-badge" title="src/components/ui/tabs.tsx">[REUSE] Tabs</span>
+          <div class="tabs">
+            <button class="tab">Today</button>
+            <button class="tab active">This Week</button>
+            <button class="tab">This Month</button>
+            <button class="tab">Custom</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Summary Stats - Reduced to 2 key metrics with trends -->
+      <div class="stats-grid">
+        <!-- REUSABLE: StatCard from src/components/analytics/stat-card.tsx (modified) -->
+        <div class="component-wrapper-block">
+          <span class="reuse-badge" title="src/components/analytics/stat-card.tsx">[REUSE] StatCard</span>
+          <div class="stat-card">
+            <div class="stat-icon">⏱</div>
+            <div class="stat-card-label">Total Time Tracked</div>
+            <div class="stat-card-value">40h 15m</div>
+            <div class="stat-card-trend trend-up">↑ 12% vs last week</div>
+          </div>
+        </div>
+
+        <div class="component-wrapper-block">
+          <span class="reuse-badge" title="src/components/analytics/stat-card.tsx">[REUSE] StatCard</span>
+          <div class="stat-card">
+            <div class="stat-icon">🍅</div>
+            <div class="stat-card-label">Total Pomodoros</div>
+            <div class="stat-card-value">48</div>
+            <div class="stat-card-trend trend-down">↓ 5% vs last week</div>
+          </div>
+        </div>
+        
+        <div class="annotation" style="grid-column: span 2;">
+          <strong>Change:</strong> Removed "Average Session" and "Total Sessions" - replaced with trend comparisons that provide actionable context.
+        </div>
+      </div>
+
+      <!-- Quick Insights Section - NEW -->
+      <div class="insights-section">
+        <h2 class="section-header">Quick Insights</h2>
+        <div class="insights-grid">
+          <div class="component-wrapper-block">
+            <span class="new-badge" title="To be created at src/components/analytics/insight-card.tsx">[NEW] InsightCard</span>
+            <div class="insight-card">
+              <div class="insight-icon">📈</div>
+              <div class="insight-title">Most Productive Day</div>
+              <div class="insight-value">Tuesday - 9h 30m</div>
+            </div>
+          </div>
+          
+          <div class="component-wrapper-block">
+            <span class="new-badge" title="To be created at src/components/analytics/insight-card.tsx">[NEW] InsightCard</span>
+            <div class="insight-card">
+              <div class="insight-icon">🎯</div>
+              <div class="insight-title">Top Work Area</div>
+              <div class="insight-value">Finance & Ops - 21.9%</div>
+            </div>
+          </div>
+          
+          <div class="component-wrapper-block">
+            <span class="new-badge" title="To be created at src/components/analytics/insight-card.tsx">[NEW] InsightCard</span>
+            <div class="insight-card">
+              <div class="insight-icon">⏰</div>
+              <div class="insight-title">Peak Hours</div>
+              <div class="insight-value">10 AM - 12 PM</div>
+            </div>
+          </div>
+        </div>
+        <div class="annotation">
+          <strong>New:</strong> Quick insights surface key patterns automatically without requiring users to interpret charts.
+        </div>
+      </div>
+
+      <!-- Charts Section -->
+      <div class="charts-grid">
+        <!-- Work Area Distribution - Donut with Legend -->
+        <div class="component-wrapper-block">
+          <span class="reuse-badge" title="src/components/ui/card.tsx">[REUSE] Card</span>
+          <div class="chart-card">
+            <div class="chart-header">
+              <span class="chart-title">Time by Work Area</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 24px;">
+              <div class="donut-chart">
+                <div class="donut-ring"></div>
+                <div class="donut-center">
+                  <div class="donut-center-value">40h</div>
+                  <div class="donut-center-label">Total</div>
+                </div>
+              </div>
+              <div class="pie-legend" style="display: flex; flex-direction: column; gap: 8px;">
+                <div class="pie-legend-item">
+                  <div class="pie-legend-color" style="background: #333;"></div>
+                  <span class="pie-legend-text">Finance & Ops</span>
+                  <span class="pie-legend-value">21.9%</span>
+                </div>
+                <div class="pie-legend-item">
+                  <div class="pie-legend-color" style="background: #666;"></div>
+                  <span class="pie-legend-text">Analytics</span>
+                  <span class="pie-legend-value">17.4%</span>
+                </div>
+                <div class="pie-legend-item">
+                  <div class="pie-legend-color" style="background: #999;"></div>
+                  <span class="pie-legend-text">Product</span>
+                  <span class="pie-legend-value">13.5%</span>
+                </div>
+                <div class="pie-legend-item">
+                  <div class="pie-legend-color" style="background: #ccc;"></div>
+                  <span class="pie-legend-text">Others</span>
+                  <span class="pie-legend-value">47.2%</span>
+                </div>
+              </div>
+            </div>
+            <div class="annotation">
+              <strong>Change:</strong> Donut chart with external legend (instead of inline labels that overlap). Different colors for each segment.
+            </div>
+          </div>
+        </div>
+
+        <!-- Work Type Distribution - Horizontal Bar -->
+        <div class="component-wrapper-block">
+          <span class="reuse-badge" title="src/components/ui/card.tsx">[REUSE] Card</span>
+          <div class="chart-card">
+            <div class="chart-header">
+              <span class="chart-title">Time by Work Type</span>
+            </div>
+            <div class="bar-chart">
+              <div class="bar-group">
+                <div class="bar" style="height: 160px; background: #333;"></div>
+                <span class="bar-label">Multiple</span>
+              </div>
+              <div class="bar-group">
+                <div class="bar" style="height: 100px; background: #666;"></div>
+                <span class="bar-label">Meetings</span>
+              </div>
+              <div class="bar-group">
+                <div class="bar" style="height: 85px; background: #999;"></div>
+                <span class="bar-label">Self Work</span>
+              </div>
+              <div class="bar-group">
+                <div class="bar" style="height: 30px; background: #ccc;"></div>
+                <span class="bar-label">External</span>
+              </div>
+            </div>
+            <div class="annotation">
+              <strong>Change:</strong> Each bar has a distinct color. Y-axis shows hours instead of raw minutes.
+            </div>
+          </div>
+        </div>
+
+        <!-- Daily Productivity Trend - NOW BAR CHART -->
+        <div class="component-wrapper-block chart-card-full">
+          <span class="reuse-badge" title="src/components/ui/card.tsx">[REUSE] Card</span>
+          <div class="chart-card">
+            <div class="chart-header">
+              <span class="chart-title">Daily Productivity</span>
+              <div class="chart-legend">
+                <div class="legend-item">
+                  <div class="legend-dot" style="background: #666;"></div>
+                  <span>Hours Tracked</span>
+                </div>
+              </div>
+            </div>
+            <div class="trend-bar-chart">
+              <div class="trend-bar">
+                <div class="trend-bar-fill" style="height: 140px;"></div>
+                <span class="trend-bar-label">Mon</span>
+              </div>
+              <div class="trend-bar">
+                <div class="trend-bar-fill" style="height: 160px; background: #333;"></div>
+                <span class="trend-bar-label">Tue</span>
+              </div>
+              <div class="trend-bar">
+                <div class="trend-bar-fill" style="height: 120px;"></div>
+                <span class="trend-bar-label">Wed</span>
+              </div>
+              <div class="trend-bar">
+                <div class="trend-bar-fill" style="height: 100px;"></div>
+                <span class="trend-bar-label">Thu</span>
+              </div>
+              <div class="trend-bar">
+                <div class="trend-bar-fill" style="height: 60px;"></div>
+                <span class="trend-bar-label">Fri</span>
+              </div>
+              <div class="trend-bar">
+                <div class="trend-bar-fill" style="height: 20px;"></div>
+                <span class="trend-bar-label">Sat</span>
+              </div>
+              <div class="trend-bar">
+                <div class="trend-bar-fill" style="height: 10px;"></div>
+                <span class="trend-bar-label">Sun</span>
+              </div>
+            </div>
+            <div class="annotation">
+              <strong>Change:</strong> Bar chart instead of line chart with dots - easier to read and compare daily values at a glance.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Removed: Detailed Breakdown Table -->
+      <div class="annotation" style="margin-bottom: 24px;">
+        <strong>Removed:</strong> Detailed Breakdown table - redundant with charts above. Consider moving to a separate "Reports" page if detailed data is needed.
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>

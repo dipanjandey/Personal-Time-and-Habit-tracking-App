@@ -6,12 +6,13 @@ import {
   getCoreRowModel,
   getSortedRowModel,
   getFilteredRowModel,
+  getPaginationRowModel,
   flexRender,
   createColumnHelper,
   type SortingState,
   type ColumnFiltersState,
 } from '@tanstack/react-table'
-import { Trash2, Search } from 'lucide-react'
+import { Trash2, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -177,7 +178,23 @@ function EditableTextCell({
 }
 
 
-export function TimeEntriesTable() {
+interface TimeEntriesTableProps {
+  /** Limit number of entries shown (undefined = show all) */
+  limit?: number
+  /** Show search and filter controls */
+  showFilters?: boolean
+  /** Show pagination controls */
+  showPagination?: boolean
+  /** Compact mode - hide some UI elements */
+  compact?: boolean
+}
+
+export function TimeEntriesTable({ 
+  limit, 
+  showFilters = true, 
+  showPagination = false,
+  compact = false 
+}: TimeEntriesTableProps) {
   const {
     entries,
     updateEntry,
@@ -207,6 +224,15 @@ export function TimeEntriesTable() {
   const [editingCell, setEditingCell] = useState<{ rowId: string; columnId: string } | null>(null)
   const [editingValue, setEditingValue] = useState<any>(null)
   const [editingError, setEditingError] = useState<string>('')
+  const [pageSize, setPageSize] = useState(10)
+
+  // Get entries to display - limit if specified
+  const displayEntries = useMemo(() => {
+    if (limit && limit > 0) {
+      return entries.slice(0, limit)
+    }
+    return entries
+  }, [entries, limit])
   
   // Use refs to avoid stale closures in event handlers
   const editingValueRef = useRef<any>(null)
@@ -364,11 +390,11 @@ export function TimeEntriesTable() {
                     setEditingError('') // Clear error on change
                   }}
                   placeholder="mm/dd/yyyy hh:mm am/pm"
-                  className={`w-full text-xs ${editingError ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                  className={`w-full text-xs ${editingError ? 'border-danger focus-visible:ring-danger' : ''}`}
                   autoFocus
                 />
                 {editingError && (
-                  <p className="text-xs text-red-500">{editingError}</p>
+                  <p className="text-xs text-danger">{editingError}</p>
                 )}
               </div>
             )
@@ -405,11 +431,11 @@ export function TimeEntriesTable() {
                     setEditingError('') // Clear error on change
                   }}
                   placeholder="mm/dd/yyyy hh:mm am/pm"
-                  className={`w-full text-xs ${editingError ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                  className={`w-full text-xs ${editingError ? 'border-danger focus-visible:ring-danger' : ''}`}
                   autoFocus
                 />
                 {editingError && (
-                  <p className="text-xs text-red-500">{editingError}</p>
+                  <p className="text-xs text-danger">{editingError}</p>
                 )}
               </div>
             )
@@ -610,11 +636,12 @@ export function TimeEntriesTable() {
 
   // Create table instance
   const table = useReactTable({
-    data: entries,
+    data: displayEntries,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    ...(showPagination && { getPaginationRowModel: getPaginationRowModel() }),
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     globalFilterFn,
@@ -622,6 +649,7 @@ export function TimeEntriesTable() {
       sorting,
       columnFilters,
       globalFilter: searchQuery,
+      ...(showPagination && { pagination: { pageIndex: 0, pageSize } }),
     },
     onGlobalFilterChange: setSearchQuery,
   })
@@ -642,41 +670,57 @@ export function TimeEntriesTable() {
 
   return (
     <div className="bg-card rounded-lg border p-6">
-      <div className="flex items-center justify-between pb-4 mb-5 border-b">
-        <h2 className="text-2xl font-semibold">Recent Entries</h2>
-        <div className="flex items-center gap-3">
-          <Button
-            variant={isSearchOpen ? 'default' : 'outline'}
-            size="sm"
-            onClick={toggleSearch}
-            className="gap-2"
-          >
-            <Search className="w-4 h-4" />
-            Search & Filter
-          </Button>
+      {/* Header - different for compact vs full mode */}
+      {!compact ? (
+        <div className="flex items-center justify-between pb-4 mb-5 border-b">
+          <h2 className="text-2xl font-semibold">
+            {limit ? 'Recent Entries' : 'All Time Entries'}
+          </h2>
+          {showFilters && (
+            <div className="flex items-center gap-3">
+              <Button
+                variant={isSearchOpen ? 'default' : 'outline'}
+                size="sm"
+                onClick={toggleSearch}
+                className="gap-2"
+              >
+                <Search className="w-4 h-4" />
+                Search & Filter
+              </Button>
 
-          <Select value={timeRange} onValueChange={setTimeRange}>
-            <SelectTrigger className="w-[150px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="today">📅 Today</SelectItem>
-              <SelectItem value="week">This Week</SelectItem>
-              <SelectItem value="month">This Month</SelectItem>
-              <SelectItem value="custom">Custom Range</SelectItem>
-            </SelectContent>
-          </Select>
+              <Select value={timeRange} onValueChange={setTimeRange}>
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="today">📅 Today</SelectItem>
+                  <SelectItem value="week">This Week</SelectItem>
+                  <SelectItem value="month">This Month</SelectItem>
+                  <SelectItem value="custom">Custom Range</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
-      </div>
+      ) : (
+        <div className="flex items-center justify-between pb-3 mb-4">
+          <h3 className="text-lg font-semibold">Recent Entries</h3>
+          {limit && (
+            <span className="text-sm text-muted-foreground">
+              {limit} latest entries
+            </span>
+          )}
+        </div>
+      )}
 
-      {/* Collapsible Search Bar */}
-      {isSearchOpen && (
-        <div className="flex gap-3 mb-5 p-4 bg-muted/50 rounded-md border animate-in slide-in-from-top-2">
+      {/* Collapsible Search Bar - only when showFilters is true */}
+      {showFilters && isSearchOpen && (
+        <div className="flex flex-wrap gap-3 mb-5 p-4 bg-muted/50 rounded-md border animate-in slide-in-from-top-2">
           <Input
             placeholder="🔍 Search entries by work area, type, or comments..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="flex-1"
+            className="flex-1 min-w-[200px]"
           />
 
           <Select value={selectedWorkArea || 'all'} onValueChange={setSelectedWorkArea}>
@@ -755,13 +799,92 @@ export function TimeEntriesTable() {
         </table>
       </div>
 
-      <div className="flex items-center justify-between mt-4 pt-4 border-t text-sm text-muted-foreground">
-        <div>
-          💡 <strong>Tip:</strong> Click any cell to edit. Press{' '}
-          <kbd className="px-2 py-1 text-xs font-semibold bg-muted border rounded">Enter</kbd> or{' '}
-          <kbd className="px-2 py-1 text-xs font-semibold bg-muted border rounded">Esc</kbd> to save/exit.
+      {/* Footer with pagination or tips */}
+      <div className="flex flex-col gap-4 mt-4 pt-4 border-t">
+        {/* Pagination Controls */}
+        {showPagination && (
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>
+                Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+              </span>
+              <span className="text-muted-foreground/50">•</span>
+              <span>{table.getFilteredRowModel().rows.length} entries</span>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Select 
+                value={pageSize.toString()} 
+                onValueChange={(val) => {
+                  setPageSize(Number(val))
+                  table.setPageSize(Number(val))
+                }}
+              >
+                <SelectTrigger className="w-[100px] h-8">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10 / page</SelectItem>
+                  <SelectItem value="20">20 / page</SelectItem>
+                  <SelectItem value="50">50 / page</SelectItem>
+                  <SelectItem value="100">100 / page</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => table.setPageIndex(0)}
+                  disabled={!table.getCanPreviousPage()}
+                  className="h-8 w-8 p-0"
+                >
+                  <ChevronsLeft className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => table.previousPage()}
+                  disabled={!table.getCanPreviousPage()}
+                  className="h-8 w-8 p-0"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => table.nextPage()}
+                  disabled={!table.getCanNextPage()}
+                  className="h-8 w-8 p-0"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+                  disabled={!table.getCanNextPage()}
+                  className="h-8 w-8 p-0"
+                >
+                  <ChevronsRight className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Tips and Total */}
+        <div className="flex items-center justify-between text-sm text-muted-foreground">
+          {!compact && (
+            <div>
+              💡 <strong>Tip:</strong> Click any cell to edit. Press{' '}
+              <kbd className="px-2 py-1 text-xs font-semibold bg-muted border rounded">Enter</kbd> or{' '}
+              <kbd className="px-2 py-1 text-xs font-semibold bg-muted border rounded">Esc</kbd> to save/exit.
+            </div>
+          )}
+          {compact && <div />}
+          <div className="text-lg font-bold text-foreground">Total: {formatDuration(totalDuration)}</div>
         </div>
-        <div className="text-lg font-bold text-foreground">Total Duration: {formatDuration(totalDuration)}</div>
       </div>
     </div>
   )

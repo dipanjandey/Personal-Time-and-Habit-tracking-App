@@ -69,19 +69,19 @@ export default function LoginPage() {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted to-background">
             <div className="w-full max-w-md p-8">
                 {/* Logo */}
                 <div className="flex items-center justify-center gap-3 mb-8">
-                    <div className="p-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl">
-                        <Clock className="w-8 h-8 text-white" />
+                    <div className="p-3 bg-primary rounded-xl">
+                        <Clock className="w-8 h-8 text-primary-foreground" />
                     </div>
-                    <h1 className="text-2xl font-bold text-white">Habit & Time Tracker</h1>
+                    <h1 className="text-2xl font-bold text-foreground">Habit & Time Tracker</h1>
                 </div>
 
                 {/* Card */}
-                <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 shadow-2xl">
-                    <h2 className="text-xl font-semibold text-white text-center mb-6">
+                <div className="bg-card/80 backdrop-blur-lg rounded-2xl p-8 border border-border shadow-2xl">
+                    <h2 className="text-xl font-semibold text-card-foreground text-center mb-6">
                         {isSignUp ? 'Create an account' : 'Welcome back'}
                     </h2>
 
@@ -89,8 +89,7 @@ export default function LoginPage() {
                     <Button
                         onClick={handleGoogleAuth}
                         disabled={loading}
-                        variant="outline"
-                        className="w-full bg-blue-500 hover:bg-blue-600 text-white border-0 mb-4"
+                        className="w-full bg-primary hover:bg-primary/90 text-primary-foreground mb-4"
                     >
                         <Chrome className="w-5 h-5 mr-2" />
                         Continue with Google
@@ -98,17 +97,17 @@ export default function LoginPage() {
 
                     <div className="relative my-6">
                         <div className="absolute inset-0 flex items-center">
-                            <div className="w-full border-t border-white/20"></div>
+                            <div className="w-full border-t border-border"></div>
                         </div>
                         <div className="relative flex justify-center text-sm">
-                            <span className="px-2 bg-transparent text-gray-400">or</span>
+                            <span className="px-2 bg-card text-muted-foreground">or</span>
                         </div>
                     </div>
 
                     {/* Email Form */}
                     <form onSubmit={handleEmailAuth} className="space-y-4">
                         <div className="space-y-2">
-                            <Label htmlFor="email" className="text-gray-200">Email</Label>
+                            <Label htmlFor="email" className="text-card-foreground">Email</Label>
                             <Input
                                 id="email"
                                 type="email"
@@ -116,12 +115,12 @@ export default function LoginPage() {
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 required
-                                className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
+                                className="bg-background border-input text-foreground placeholder:text-muted-foreground"
                             />
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="password" className="text-gray-200">Password</Label>
+                            <Label htmlFor="password" className="text-card-foreground">Password</Label>
                             <Input
                                 id="password"
                                 type="password"
@@ -130,18 +129,18 @@ export default function LoginPage() {
                                 onChange={(e) => setPassword(e.target.value)}
                                 required
                                 minLength={6}
-                                className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
+                                className="bg-background border-input text-foreground placeholder:text-muted-foreground"
                             />
                         </div>
 
                         {error && (
-                            <div className="p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200 text-sm">
+                            <div className="p-3 bg-danger/20 border border-danger/50 rounded-lg text-danger text-sm">
                                 {error}
                             </div>
                         )}
 
                         {message && (
-                            <div className="p-3 bg-green-500/20 border border-green-500/50 rounded-lg text-green-200 text-sm">
+                            <div className="p-3 bg-success/20 border border-success/50 rounded-lg text-success text-sm">
                                 {message}
                             </div>
                         )}
@@ -149,7 +148,7 @@ export default function LoginPage() {
                         <Button
                             type="submit"
                             disabled={loading}
-                            className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border-0"
+                            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
                         >
                             <Mail className="w-4 h-4 mr-2" />
                             {loading ? 'Loading...' : isSignUp ? 'Sign Up' : 'Sign In'}
@@ -157,7 +156,7 @@ export default function LoginPage() {
                     </form>
 
                     {/* Toggle Sign Up / Sign In */}
-                    <p className="mt-6 text-center text-gray-400 text-sm">
+                    <p className="mt-6 text-center text-muted-foreground text-sm">
                         {isSignUp ? 'Already have an account?' : "Don't have an account?"}{' '}
                         <button
                             type="button"
@@ -166,7 +165,7 @@ export default function LoginPage() {
                                 setError(null)
                                 setMessage(null)
                             }}
-                            className="text-blue-400 hover:text-blue-300 font-medium"
+                            className="text-primary hover:text-primary/80 font-medium"
                         >
                             {isSignUp ? 'Sign In' : 'Sign Up'}
                         </button>
