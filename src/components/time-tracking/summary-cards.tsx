@@ -23,7 +23,7 @@ export function SummaryCards() {
       <Card className="text-center">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">
-            TODAY&apos;S TIME
+            TODAY
           </CardTitle>
         </CardHeader>
         <CardContent>

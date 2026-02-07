@@ -53,7 +53,7 @@ export default function TrackTimePage() {
         <TabsList className="h-11">
           <TabsTrigger value="entries" className="gap-2 px-4">
             <ListTodo className="w-4 h-4" />
-            <span className="hidden sm:inline">Add an Entry</span>
+            <span className="hidden sm:inline">Add Entry</span>
             <span className="sm:hidden">Add</span>
           </TabsTrigger>
           <TabsTrigger value="pomodoro" className="gap-2 px-4">

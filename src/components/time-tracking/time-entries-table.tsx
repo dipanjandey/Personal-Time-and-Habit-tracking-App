@@ -12,7 +12,7 @@ import {
   type SortingState,
   type ColumnFiltersState,
 } from '@tanstack/react-table'
-import { Trash2, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
+import { Trash2, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -178,6 +178,33 @@ function EditableTextCell({
 }
 
 
+// Sortable header component
+function SortableHeader({
+  column,
+  children,
+}: {
+  column: any
+  children: React.ReactNode
+}) {
+  const sorted = column.getIsSorted()
+  
+  return (
+    <button
+      className="flex items-center gap-1.5 hover:text-foreground transition-colors cursor-pointer select-none"
+      onClick={() => column.toggleSorting(sorted === 'asc')}
+    >
+      {children}
+      {sorted === 'asc' ? (
+        <ArrowUp className="w-3.5 h-3.5" />
+      ) : sorted === 'desc' ? (
+        <ArrowDown className="w-3.5 h-3.5" />
+      ) : (
+        <ArrowUpDown className="w-3.5 h-3.5 text-muted-foreground/50" />
+      )}
+    </button>
+  )
+}
+
 interface TimeEntriesTableProps {
   /** Limit number of entries shown (undefined = show all) */
   limit?: number
@@ -219,7 +246,8 @@ export function TimeEntriesTable({
   }, [loadWorkAreas, loadWorkTypes])
 
   const [timeRange, setTimeRange] = useState('today')
-  const [sorting, setSorting] = useState<SortingState>([])
+  // Default sort by startTime descending (newest first)
+  const [sorting, setSorting] = useState<SortingState>([{ id: 'startTime', desc: true }])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [editingCell, setEditingCell] = useState<{ rowId: string; columnId: string } | null>(null)
   const [editingValue, setEditingValue] = useState<any>(null)
@@ -370,8 +398,14 @@ export function TimeEntriesTable({
   const columns = useMemo(
     () => [
       columnHelper.accessor('startTime', {
-        header: 'Start',
+        header: ({ column }) => <SortableHeader column={column}>Start</SortableHeader>,
         size: 200,
+        enableSorting: true,
+        sortingFn: (rowA, rowB) => {
+          const a = rowA.original.startTime || ''
+          const b = rowB.original.startTime || ''
+          return a.localeCompare(b)
+        },
         cell: ({ row, getValue }) => {
           const value = getValue()
           const isEditingCell = isEditing(row.original.id, 'startTime')
@@ -411,8 +445,14 @@ export function TimeEntriesTable({
         },
       }),
       columnHelper.accessor('endTime', {
-        header: 'End',
+        header: ({ column }) => <SortableHeader column={column}>End</SortableHeader>,
         size: 200,
+        enableSorting: true,
+        sortingFn: (rowA, rowB) => {
+          const a = rowA.original.endTime || ''
+          const b = rowB.original.endTime || ''
+          return a.localeCompare(b)
+        },
         cell: ({ row, getValue }) => {
           const value = getValue()
           const isEditingCell = isEditing(row.original.id, 'endTime')
@@ -452,8 +492,9 @@ export function TimeEntriesTable({
         },
       }),
       columnHelper.accessor('workArea', {
-        header: 'Work Area',
+        header: ({ column }) => <SortableHeader column={column}>Work Area</SortableHeader>,
         size: 180,
+        enableSorting: true,
         cell: ({ row, getValue }) => {
           const value = getValue()
           const isEditingCell = isEditing(row.original.id, 'workArea')
@@ -491,8 +532,9 @@ export function TimeEntriesTable({
         },
       }),
       columnHelper.accessor('workType', {
-        header: 'Work Type',
+        header: ({ column }) => <SortableHeader column={column}>Work Type</SortableHeader>,
         size: 160,
+        enableSorting: true,
         cell: ({ row, getValue }) => {
           const value = getValue()
           const isEditingCell = isEditing(row.original.id, 'workType')
@@ -530,8 +572,9 @@ export function TimeEntriesTable({
         },
       }),
       columnHelper.accessor('pomodoros', {
-        header: '🍅',
+        header: ({ column }) => <SortableHeader column={column}>🍅</SortableHeader>,
         size: 80,
+        enableSorting: true,
         cell: ({ row, getValue }) => {
           const value = getValue()
           const isEditingCell = isEditing(row.original.id, 'pomodoros')
@@ -563,7 +606,8 @@ export function TimeEntriesTable({
         },
       }),
       columnHelper.accessor('comments', {
-        header: 'Comments',
+        header: ({ column }) => <SortableHeader column={column}>Comments</SortableHeader>,
+        enableSorting: true,
         cell: ({ row, getValue }) => {
           const value = getValue()
           const isEditingCell = isEditing(row.original.id, 'comments')
@@ -590,8 +634,9 @@ export function TimeEntriesTable({
         },
       }),
       columnHelper.accessor('duration', {
-        header: 'Duration',
+        header: ({ column }) => <SortableHeader column={column}>Duration</SortableHeader>,
         size: 100,
+        enableSorting: true,
         cell: ({ getValue }) => {
           const duration = getValue()
           if (!duration || duration === 0) {

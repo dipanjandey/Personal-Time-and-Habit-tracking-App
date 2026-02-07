@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Goals & Targets - Option 1: Card Grid Layout</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      background: #fff;
+      color: #333;
+      padding: 24px;
+      line-height: 1.5;
+    }
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 16px;
+      border-bottom: 2px dashed #ccc;
+      margin-bottom: 24px;
+    }
+    .page-title {
+      font-size: 28px;
+      font-weight: bold;
+    }
+    .component-wrapper {
+      position: relative;
+      display: inline-block;
+    }
+    .component-wrapper.block {
+      display: block;
+    }
+    .reuse-badge {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: #4CAF50;
+      color: white;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-family: Arial, sans-serif;
+      font-weight: bold;
+      z-index: 10;
+      white-space: nowrap;
+    }
+    .new-badge {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: #FF9800;
+      color: white;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-family: Arial, sans-serif;
+      font-weight: bold;
+      z-index: 10;
+      white-space: nowrap;
+    }
+    .btn {
+      background: #f5f5f5;
+      border: 2px solid #333;
+      padding: 10px 20px;
+      font-family: inherit;
+      font-size: 14px;
+      cursor: pointer;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-primary {
+      background: #333;
+      color: #fff;
+    }
+    .card {
+      border: 2px solid #333;
+      border-radius: 8px;
+      padding: 20px;
+      background: #fff;
+      margin-bottom: 16px;
+    }
+    .card-muted {
+      background: #f5f5f5;
+    }
+    .tabs-container {
+      display: flex;
+      gap: 0;
+      margin-bottom: 24px;
+      border: 2px solid #333;
+      border-radius: 8px;
+      overflow: hidden;
+      width: fit-content;
+    }
+    .tab {
+      padding: 12px 24px;
+      background: #f5f5f5;
+      border: none;
+      font-family: inherit;
+      font-size: 14px;
+      cursor: pointer;
+      border-right: 2px solid #333;
+    }
+    .tab:last-child {
+      border-right: none;
+    }
+    .tab.active {
+      background: #333;
+      color: #fff;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      border: 2px solid #333;
+      border-radius: 8px;
+      padding: 16px;
+      background: #fff;
+    }
+    .stat-label {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 4px;
+    }
+    .stat-value {
+      font-size: 24px;
+      font-weight: bold;
+    }
+    .stat-trend {
+      font-size: 12px;
+      color: #666;
+      margin-top: 4px;
+    }
+    .goals-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+    }
+    .goal-card {
+      border: 2px solid #333;
+      border-radius: 8px;
+      padding: 20px;
+      background: #fff;
+    }
+    .goal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 16px;
+    }
+    .goal-title {
+      font-size: 16px;
+      font-weight: bold;
+    }
+    .goal-type-badge {
+      background: #f5f5f5;
+      border: 1px solid #999;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+    }
+    .goal-progress-container {
+      margin-bottom: 12px;
+    }
+    .goal-progress-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      margin-bottom: 6px;
+    }
+    .progress-bar {
+      height: 12px;
+      background: #e0e0e0;
+      border-radius: 6px;
+      overflow: hidden;
+      border: 1px solid #999;
+    }
+    .progress-fill {
+      height: 100%;
+      background: #666;
+      border-radius: 6px;
+    }
+    .goal-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: #666;
+    }
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .section-title {
+      font-size: 18px;
+      font-weight: bold;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+      border: 2px dashed #ccc;
+      border-radius: 8px;
+    }
+    .dialog-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+    .dialog {
+      background: #fff;
+      border: 3px solid #333;
+      border-radius: 12px;
+      padding: 24px;
+      width: 480px;
+      max-width: 90%;
+    }
+    .dialog-title {
+      font-size: 20px;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+    .dialog-description {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 20px;
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .form-label {
+      display: block;
+      font-size: 13px;
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+    .form-input, .form-select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 2px solid #333;
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 14px;
+    }
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .dialog-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      margin-top: 24px;
+    }
+    .wireframe-note {
+      background: #fffde7;
+      border: 2px solid #ffd600;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 24px;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wireframe-note">
+    <strong>Wireframe Option 1: Card Grid Layout</strong> — Conservative approach using existing Card, Progress, Button, Tabs components. Goals displayed in a 2-column grid with inline progress bars.
+  </div>
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <h1 class="page-title">Goals & Targets</h1>
+    <!-- REUSABLE: Button from src/components/ui/button.tsx -->
+    <div class="component-wrapper">
+      <span class="reuse-badge" title="src/components/ui/button.tsx">[REUSE] Button</span>
+      <button class="btn btn-primary">+ Add Goal</button>
+    </div>
+  </div>
+
+  <!-- Period Tabs -->
+  <!-- REUSABLE: Tabs from src/components/ui/tabs.tsx -->
+  <div class="component-wrapper block" style="margin-bottom: 24px;">
+    <span class="reuse-badge" title="src/components/ui/tabs.tsx">[REUSE] Tabs</span>
+    <div class="tabs-container">
+      <button class="tab active">This Week</button>
+      <button class="tab">This Month</button>
+      <button class="tab">All Goals</button>
+    </div>
+  </div>
+
+  <!-- Summary Stats -->
+  <div class="stats-grid">
+    <!-- REUSABLE: StatCard from src/components/analytics/stat-card.tsx -->
+    <div class="component-wrapper block">
+      <span class="reuse-badge" title="src/components/analytics/stat-card.tsx">[REUSE] StatCard</span>
+      <div class="stat-card">
+        <div class="stat-label">Goals Completed</div>
+        <div class="stat-value">3 / 5</div>
+        <div class="stat-trend">↑ 1 more than last week</div>
+      </div>
+    </div>
+    
+    <div class="component-wrapper block">
+      <span class="reuse-badge" title="src/components/analytics/stat-card.tsx">[REUSE] StatCard</span>
+      <div class="stat-card">
+        <div class="stat-label">Total Time Goal</div>
+        <div class="stat-value">32h / 40h</div>
+        <div class="stat-trend">80% complete</div>
+      </div>
+    </div>
+    
+    <div class="component-wrapper block">
+      <span class="reuse-badge" title="src/components/analytics/stat-card.tsx">[REUSE] StatCard</span>
+      <div class="stat-card">
+        <div class="stat-label">Pomodoro Goal</div>
+        <div class="stat-value">18 / 25</div>
+        <div class="stat-trend">72% complete</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Active Goals Section -->
+  <div class="section-header">
+    <h2 class="section-title">Active Goals</h2>
+    <span style="font-size: 13px; color: #666;">5 goals this week</span>
+  </div>
+
+  <div class="goals-grid">
+    <!-- Goal Card 1 -->
+    <!-- NEW COMPONENT: GoalCard -->
+    <div class="component-wrapper block">
+      <span class="new-badge" title="To be created at src/components/goals/goal-card.tsx">[NEW] GoalCard</span>
+      <div class="goal-card">
+        <div class="goal-header">
+          <div>
+            <div class="goal-title">🎯 Coding Time</div>
+            <div style="font-size: 12px; color: #666; margin-top: 4px;">Work Area: Development</div>
+          </div>
+          <span class="goal-type-badge">⏱️ Time</span>
+        </div>
+        <div class="goal-progress-container">
+          <div class="goal-progress-label">
+            <span>Progress</span>
+            <span>12h / 15h (80%)</span>
+          </div>
+          <!-- REUSABLE: Progress from src/components/ui/progress.tsx -->
+          <div class="component-wrapper block" style="position: relative;">
+            <span class="reuse-badge" style="top: -14px; right: 0;" title="src/components/ui/progress.tsx">[REUSE] Progress</span>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: 80%;"></div>
+            </div>
+          </div>
+        </div>
+        <div class="goal-meta">
+          <span>Weekly Goal</span>
+          <span>3 days left</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Goal Card 2 -->
+    <div class="component-wrapper block">
+      <span class="new-badge" title="To be created at src/components/goals/goal-card.tsx">[NEW] GoalCard</span>
+      <div class="goal-card">
+        <div class="goal-header">
+          <div>
+            <div class="goal-title">🍅 Daily Pomodoros</div>
+            <div style="font-size: 12px; color: #666; margin-top: 4px;">All work areas</div>
+          </div>
+          <span class="goal-type-badge">🍅 Pomodoro</span>
+        </div>
+        <div class="goal-progress-container">
+          <div class="goal-progress-label">
+            <span>Progress</span>
+            <span>4 / 6 (67%)</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: 67%;"></div>
+          </div>
+        </div>
+        <div class="goal-meta">
+          <span>Daily Goal</span>
+          <span>Resets at midnight</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Goal Card 3 -->
+    <div class="component-wrapper block">
+      <span class="new-badge" title="To be created at src/components/goals/goal-card.tsx">[NEW] GoalCard</span>
+      <div class="goal-card">
+        <div class="goal-header">
+          <div>
+            <div class="goal-title">📚 Learning Time</div>
+            <div style="font-size: 12px; color: #666; margin-top: 4px;">Work Area: Learning</div>
+          </div>
+          <span class="goal-type-badge">⏱️ Time</span>
+        </div>
+        <div class="goal-progress-container">
+          <div class="goal-progress-label">
+            <span>Progress</span>
+            <span>5h / 5h (100%)</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: 100%; background: #4CAF50;"></div>
+          </div>
+        </div>
+        <div class="goal-meta">
+          <span>✅ Completed!</span>
+          <span>Weekly Goal</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Goal Card 4 -->
+    <div class="component-wrapper block">
+      <span class="new-badge" title="To be created at src/components/goals/goal-card.tsx">[NEW] GoalCard</span>
+      <div class="goal-card">
+        <div class="goal-header">
+          <div>
+            <div class="goal-title">💼 Client Work</div>
+            <div style="font-size: 12px; color: #666; margin-top: 4px;">Work Area: Client Projects</div>
+          </div>
+          <span class="goal-type-badge">⏱️ Time</span>
+        </div>
+        <div class="goal-progress-container">
+          <div class="goal-progress-label">
+            <span>Progress</span>
+            <span>8h / 20h (40%)</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: 40%;"></div>
+          </div>
+        </div>
+        <div class="goal-meta">
+          <span>Weekly Goal</span>
+          <span>3 days left</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Goal Dialog (shown for reference) -->
+  <div style="margin-top: 48px; padding-top: 24px; border-top: 2px dashed #ccc;">
+    <h3 style="margin-bottom: 16px; color: #666;">📋 Add Goal Dialog (appears on button click)</h3>
+    
+    <!-- REUSABLE: Dialog from src/components/ui/dialog.tsx -->
+    <div class="component-wrapper block">
+      <span class="reuse-badge" title="src/components/ui/dialog.tsx">[REUSE] Dialog</span>
+      <div class="dialog" style="position: relative; margin: 0;">
+        <div class="dialog-title">Create New Goal</div>
+        <div class="dialog-description">Set a time or pomodoro target for your work.</div>
+        
+        <div class="form-group">
+          <!-- REUSABLE: Input from src/components/ui/input.tsx -->
+          <label class="form-label">Goal Name</label>
+          <input type="text" class="form-input" placeholder="e.g., Weekly Coding Goal" />
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <!-- REUSABLE: Select from src/components/ui/select.tsx -->
+            <label class="form-label">Goal Type</label>
+            <select class="form-select">
+              <option>⏱️ Time-based</option>
+              <option>🍅 Pomodoro count</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Target</label>
+            <input type="text" class="form-input" placeholder="e.g., 10 hours" />
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Work Area (optional)</label>
+            <select class="form-select">
+              <option>All Areas</option>
+              <option>Development</option>
+              <option>Learning</option>
+              <option>Client Work</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Period</label>
+            <select class="form-select">
+              <option>Daily</option>
+              <option>Weekly</option>
+              <option>Monthly</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="dialog-footer">
+          <button class="btn">Cancel</button>
+          <button class="btn btn-primary">Create Goal</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

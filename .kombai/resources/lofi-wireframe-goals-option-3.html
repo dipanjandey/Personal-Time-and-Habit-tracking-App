@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Goals & Targets - Option 3: Gamified Dashboard</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      background: #fff;
+      color: #333;
+      padding: 24px;
+      line-height: 1.5;
+    }
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 16px;
+      border-bottom: 2px dashed #ccc;
+      margin-bottom: 24px;
+    }
+    .page-title {
+      font-size: 28px;
+      font-weight: bold;
+    }
+    .component-wrapper {
+      position: relative;
+      display: inline-block;
+    }
+    .component-wrapper.block {
+      display: block;
+    }
+    .reuse-badge {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: #4CAF50;
+      color: white;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-family: Arial, sans-serif;
+      font-weight: bold;
+      z-index: 10;
+      white-space: nowrap;
+    }
+    .new-badge {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: #FF9800;
+      color: white;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-family: Arial, sans-serif;
+      font-weight: bold;
+      z-index: 10;
+      white-space: nowrap;
+    }
+    .btn {
+      background: #f5f5f5;
+      border: 2px solid #333;
+      padding: 10px 20px;
+      font-family: inherit;
+      font-size: 14px;
+      cursor: pointer;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-primary {
+      background: #333;
+      color: #fff;
+    }
+    .wireframe-note {
+      background: #fffde7;
+      border: 2px solid #ffd600;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 24px;
+      font-size: 13px;
+    }
+    
+    /* Hero Stats Banner */
+    .hero-banner {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .main-stat-card {
+      border: 2px solid #333;
+      border-radius: 12px;
+      padding: 24px;
+      background: #f9f9f9;
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+    .level-badge {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      border: 4px solid #333;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+    }
+    .level-badge .level {
+      font-size: 24px;
+    }
+    .level-badge .label {
+      font-size: 10px;
+      color: #666;
+    }
+    .main-stat-info h3 {
+      font-size: 18px;
+      margin-bottom: 4px;
+    }
+    .main-stat-info p {
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 8px;
+    }
+    .xp-bar {
+      width: 200px;
+      height: 8px;
+      background: #e0e0e0;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .xp-fill {
+      height: 100%;
+      background: #666;
+      width: 65%;
+    }
+    .xp-label {
+      font-size: 11px;
+      color: #666;
+      margin-top: 4px;
+    }
+    .mini-stat-card {
+      border: 2px solid #333;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      background: #fff;
+    }
+    .mini-stat-icon {
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
+    .mini-stat-value {
+      font-size: 24px;
+      font-weight: bold;
+    }
+    .mini-stat-label {
+      font-size: 12px;
+      color: #666;
+      margin-top: 4px;
+    }
+    
+    /* Two Column Layout */
+    .two-column {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 24px;
+    }
+    
+    /* Goals Column */
+    .goals-column h2 {
+      font-size: 18px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .goal-category {
+      margin-bottom: 24px;
+    }
+    .category-header {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px dashed #ccc;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .goal-tile {
+      border: 2px solid #333;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+      background: #fff;
+      display: grid;
+      grid-template-columns: 48px 1fr auto;
+      align-items: center;
+      gap: 16px;
+    }
+    .goal-tile.complete {
+      background: #f5fff5;
+      border-color: #4CAF50;
+    }
+    .goal-emoji {
+      width: 48px;
+      height: 48px;
+      border-radius: 10px;
+      background: #f5f5f5;
+      border: 2px solid #ccc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+    .goal-tile.complete .goal-emoji {
+      background: #e8f5e9;
+      border-color: #4CAF50;
+    }
+    .goal-details h4 {
+      font-size: 15px;
+      margin-bottom: 4px;
+    }
+    .goal-details .meta {
+      font-size: 12px;
+      color: #666;
+    }
+    .goal-progress-ring {
+      width: 56px;
+      height: 56px;
+      position: relative;
+    }
+    .ring-bg {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      border: 6px solid #e0e0e0;
+      position: absolute;
+    }
+    .ring-progress {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      border: 6px solid transparent;
+      border-top-color: #333;
+      border-right-color: #333;
+      position: absolute;
+    }
+    .ring-progress.full {
+      border-color: #4CAF50;
+    }
+    .ring-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 12px;
+      font-weight: bold;
+    }
+    
+    /* Sidebar */
+    .sidebar-column {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .sidebar-card {
+      border: 2px solid #333;
+      border-radius: 12px;
+      padding: 20px;
+      background: #fff;
+    }
+    .sidebar-card h3 {
+      font-size: 16px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    /* Achievements */
+    .achievements-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    .achievement {
+      text-align: center;
+      padding: 12px 8px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      background: #fafafa;
+    }
+    .achievement.earned {
+      border-color: #333;
+      background: #fff;
+    }
+    .achievement.locked {
+      opacity: 0.5;
+    }
+    .achievement-icon {
+      font-size: 28px;
+      margin-bottom: 4px;
+    }
+    .achievement-name {
+      font-size: 10px;
+      color: #666;
+    }
+    
+    /* Weekly Heatmap */
+    .heatmap-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+    }
+    .heatmap-day {
+      aspect-ratio: 1;
+      border-radius: 4px;
+      background: #f0f0f0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      border: 1px solid #ddd;
+    }
+    .heatmap-day.level-1 { background: #e0e0e0; }
+    .heatmap-day.level-2 { background: #bdbdbd; }
+    .heatmap-day.level-3 { background: #9e9e9e; }
+    .heatmap-day.level-4 { background: #757575; color: #fff; }
+    .heatmap-day.today { border: 2px solid #333; }
+    .heatmap-label {
+      font-size: 9px;
+      color: #999;
+    }
+    .heatmap-legend {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 12px;
+      font-size: 10px;
+      color: #666;
+    }
+    .legend-box {
+      width: 12px;
+      height: 12px;
+      border-radius: 2px;
+    }
+    
+    /* Quick Actions */
+    .quick-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .quick-action-btn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      border: 2px solid #333;
+      border-radius: 8px;
+      background: #fff;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 14px;
+      text-align: left;
+    }
+    .quick-action-btn:hover {
+      background: #f5f5f5;
+    }
+    .action-icon {
+      font-size: 20px;
+    }
+    
+    /* Add Goal FAB */
+    .fab {
+      position: fixed;
+      bottom: 32px;
+      right: 32px;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: #333;
+      color: #fff;
+      border: none;
+      font-size: 28px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="wireframe-note">
+    <strong>Wireframe Option 3: Gamified Dashboard</strong> — Innovative approach with level/XP system, achievements, activity heatmap, and a floating action button. More custom components for an engaging, game-like experience.
+  </div>
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <h1 class="page-title">🎯 Goals & Targets</h1>
+    <div style="display: flex; gap: 12px;">
+      <!-- REUSABLE: Button from src/components/ui/button.tsx -->
+      <div class="component-wrapper">
+        <span class="reuse-badge" title="src/components/ui/button.tsx">[REUSE] Button</span>
+        <button class="btn">📊 View Stats</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hero Stats Banner -->
+  <div class="hero-banner">
+    <!-- Level Card -->
+    <!-- NEW COMPONENT: LevelCard -->
+    <div class="component-wrapper block">
+      <span class="new-badge" title="To be created at src/components/goals/level-card.tsx">[NEW] LevelCard</span>
+      <div class="main-stat-card">
+        <div class="level-badge">
+          <span class="level">7</span>
+          <span class="label">LEVEL</span>
+        </div>
+        <div class="main-stat-info">
+          <h3>Productivity Pro</h3>
+          <p>Keep hitting goals to level up!</p>
+          <div class="xp-bar">
+            <div class="xp-fill"></div>
+          </div>
+          <div class="xp-label">650 / 1000 XP to Level 8</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mini Stat Cards -->
+    <!-- REUSABLE: Card from src/components/ui/card.tsx -->
+    <div class="component-wrapper block">
+      <span class="reuse-badge" title="src/components/ui/card.tsx">[REUSE] Card</span>
+      <div class="mini-stat-card">
+        <div class="mini-stat-icon">🔥</div>
+        <div class="mini-stat-value">12</div>
+        <div class="mini-stat-label">Day Streak</div>
+      </div>
+    </div>
+
+    <div class="component-wrapper block">
+      <span class="reuse-badge" title="src/components/ui/card.tsx">[REUSE] Card</span>
+      <div class="mini-stat-card">
+        <div class="mini-stat-icon">✅</div>
+        <div class="mini-stat-value">4/5</div>
+        <div class="mini-stat-label">Goals Complete</div>
+      </div>
+    </div>
+
+    <div class="component-wrapper block">
+      <span class="reuse-badge" title="src/components/ui/card.tsx">[REUSE] Card</span>
+      <div class="mini-stat-card">
+        <div class="mini-stat-icon">⏱️</div>
+        <div class="mini-stat-value">32h</div>
+        <div class="mini-stat-label">This Week</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Two Column Layout -->
+  <div class="two-column">
+    <!-- Goals Column -->
+    <div class="goals-column">
+      <h2>📋 Active Goals</h2>
+
+      <!-- Time Goals Category -->
+      <div class="goal-category">
+        <div class="category-header">
+          <span>⏱️</span> Time Goals
+        </div>
+
+        <!-- Goal Tile 1 -->
+        <!-- NEW COMPONENT: GoalTile -->
+        <div class="component-wrapper block">
+          <span class="new-badge" title="To be created at src/components/goals/goal-tile.tsx">[NEW] GoalTile</span>
+          <div class="goal-tile">
+            <div class="goal-emoji">🎯</div>
+            <div class="goal-details">
+              <h4>Coding Time</h4>
+              <div class="meta">Development • 12h / 15h • Weekly</div>
+            </div>
+            <div class="goal-progress-ring">
+              <div class="ring-bg"></div>
+              <div class="ring-progress"></div>
+              <div class="ring-text">80%</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Goal Tile 2 - Complete -->
+        <div class="component-wrapper block">
+          <span class="new-badge" title="To be created at src/components/goals/goal-tile.tsx">[NEW] GoalTile</span>
+          <div class="goal-tile complete">
+            <div class="goal-emoji">📚</div>
+            <div class="goal-details">
+              <h4>Learning Time ✅</h4>
+              <div class="meta">Learning • 5h / 5h • Weekly • +50 XP earned!</div>
+            </div>
+            <div class="goal-progress-ring">
+              <div class="ring-bg"></div>
+              <div class="ring-progress full"></div>
+              <div class="ring-text">✓</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Goal Tile 3 -->
+        <div class="component-wrapper block">
+          <span class="new-badge" title="To be created at src/components/goals/goal-tile.tsx">[NEW] GoalTile</span>
+          <div class="goal-tile">
+            <div class="goal-emoji">💼</div>
+            <div class="goal-details">
+              <h4>Client Work</h4>
+              <div class="meta">Client Projects • 8h / 20h • Weekly</div>
+            </div>
+            <div class="goal-progress-ring">
+              <div class="ring-bg"></div>
+              <div class="ring-progress" style="border-right-color: transparent;"></div>
+              <div class="ring-text">40%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pomodoro Goals Category -->
+      <div class="goal-category">
+        <div class="category-header">
+          <span>🍅</span> Pomodoro Goals
+        </div>
+
+        <div class="component-wrapper block">
+          <span class="new-badge" title="To be created at src/components/goals/goal-tile.tsx">[NEW] GoalTile</span>
+          <div class="goal-tile">
+            <div class="goal-emoji">🍅</div>
+            <div class="goal-details">
+              <h4>Daily Pomodoros</h4>
+              <div class="meta">All Areas • 4 / 6 today • Resets midnight</div>
+            </div>
+            <div class="goal-progress-ring">
+              <div class="ring-bg"></div>
+              <div class="ring-progress"></div>
+              <div class="ring-text">67%</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="component-wrapper block">
+          <span class="new-badge" title="To be created at src/components/goals/goal-tile.tsx">[NEW] GoalTile</span>
+          <div class="goal-tile">
+            <div class="goal-emoji">🎪</div>
+            <div class="goal-details">
+              <h4>Weekly Focus Sessions</h4>
+              <div class="meta">Deep Work • 18 / 25 pomodoros • 3 days left</div>
+            </div>
+            <div class="goal-progress-ring">
+              <div class="ring-bg"></div>
+              <div class="ring-progress"></div>
+              <div class="ring-text">72%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar Column -->
+    <div class="sidebar-column">
+      <!-- Achievements Card -->
+      <!-- NEW COMPONENT: AchievementsCard -->
+      <div class="component-wrapper block">
+        <span class="new-badge" title="To be created at src/components/goals/achievements-card.tsx">[NEW] AchievementsCard</span>
+        <div class="sidebar-card">
+          <h3>🏆 Achievements</h3>
+          <div class="achievements-grid">
+            <div class="achievement earned">
+              <div class="achievement-icon">🔥</div>
+              <div class="achievement-name">7-Day Streak</div>
+            </div>
+            <div class="achievement earned">
+              <div class="achievement-icon">🎯</div>
+              <div class="achievement-name">First Goal</div>
+            </div>
+            <div class="achievement earned">
+              <div class="achievement-icon">🍅</div>
+              <div class="achievement-name">10 Pomodoros</div>
+            </div>
+            <div class="achievement">
+              <div class="achievement-icon">⭐</div>
+              <div class="achievement-name">Perfect Week</div>
+            </div>
+            <div class="achievement locked">
+              <div class="achievement-icon">🔒</div>
+              <div class="achievement-name">30-Day Streak</div>
+            </div>
+            <div class="achievement locked">
+              <div class="achievement-icon">🔒</div>
+              <div class="achievement-name">100 Hours</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Activity Heatmap -->
+      <!-- NEW COMPONENT: ActivityHeatmap -->
+      <div class="component-wrapper block">
+        <span class="new-badge" title="To be created at src/components/goals/activity-heatmap.tsx">[NEW] ActivityHeatmap</span>
+        <div class="sidebar-card">
+          <h3>📅 This Week</h3>
+          <div class="heatmap-grid">
+            <div class="heatmap-day level-4">
+              <span>M</span>
+              <span class="heatmap-label">8h</span>
+            </div>
+            <div class="heatmap-day level-3">
+              <span>T</span>
+              <span class="heatmap-label">6h</span>
+            </div>
+            <div class="heatmap-day level-4">
+              <span>W</span>
+              <span class="heatmap-label">7h</span>
+            </div>
+            <div class="heatmap-day level-2">
+              <span>T</span>
+              <span class="heatmap-label">4h</span>
+            </div>
+            <div class="heatmap-day level-3 today">
+              <span>F</span>
+              <span class="heatmap-label">5h</span>
+            </div>
+            <div class="heatmap-day level-1">
+              <span>S</span>
+              <span class="heatmap-label">2h</span>
+            </div>
+            <div class="heatmap-day">
+              <span>S</span>
+              <span class="heatmap-label">—</span>
+            </div>
+          </div>
+          <div class="heatmap-legend">
+            Less
+            <div class="legend-box" style="background: #f0f0f0;"></div>
+            <div class="legend-box" style="background: #bdbdbd;"></div>
+            <div class="legend-box" style="background: #9e9e9e;"></div>
+            <div class="legend-box" style="background: #757575;"></div>
+            More
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="sidebar-card">
+        <h3>⚡ Quick Actions</h3>
+        <div class="quick-actions">
+          <!-- REUSABLE: Button from src/components/ui/button.tsx -->
+          <div class="component-wrapper block">
+            <span class="reuse-badge" title="src/components/ui/button.tsx">[REUSE] Button</span>
+            <button class="quick-action-btn">
+              <span class="action-icon">➕</span>
+              <span>Create New Goal</span>
+            </button>
+          </div>
+          <div class="component-wrapper block">
+            <span class="reuse-badge" title="src/components/ui/button.tsx">[REUSE] Button</span>
+            <button class="quick-action-btn">
+              <span class="action-icon">🍅</span>
+              <span>Start Pomodoro</span>
+            </button>
+          </div>
+          <div class="component-wrapper block">
+            <span class="reuse-badge" title="src/components/ui/button.tsx">[REUSE] Button</span>
+            <button class="quick-action-btn">
+              <span class="action-icon">📊</span>
+              <span>View Full Analytics</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating Action Button -->
+  <!-- NEW COMPONENT: FAB -->
+  <div class="component-wrapper">
+    <span class="new-badge" style="top: -12px; right: -12px;" title="To be created at src/components/ui/fab.tsx">[NEW] FAB</span>
+    <button class="fab" title="Add New Goal">+</button>
+  </div>
+
+</body>
+</html>

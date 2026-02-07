@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { Clock, Settings, BarChart, LogOut, History } from 'lucide-react'
 import Link from 'next/link'
 import { useAuth } from '@/providers/auth-provider'
@@ -19,6 +20,16 @@ import {
   SidebarInset,
 } from '@/components/ui/sidebar'
 import { Button } from '@/components/ui/button'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 const navigation = [
   {
@@ -50,6 +61,7 @@ export default function DashboardLayout({
 }) {
   const { user, signOut } = useAuth()
   const router = useRouter()
+  const [showSignOutDialog, setShowSignOutDialog] = useState(false)
 
   const handleSignOut = async () => {
     await signOut()
@@ -95,7 +107,7 @@ export default function DashboardLayout({
             <Button
               variant="ghost"
               size="sm"
-              onClick={handleSignOut}
+              onClick={() => setShowSignOutDialog(true)}
               className="w-full justify-start"
             >
               <LogOut className="w-4 h-4 mr-2" />
@@ -104,6 +116,21 @@ export default function DashboardLayout({
           </div>
         </SidebarFooter>
       </Sidebar>
+
+      <AlertDialog open={showSignOutDialog} onOpenChange={setShowSignOutDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Sign out?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to sign out? You will need to sign in again to access your data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleSignOut}>Sign Out</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <SidebarInset>
         <main className="flex-1">
           {children}
