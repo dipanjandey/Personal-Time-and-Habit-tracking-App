@@ -30,6 +30,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { PomodoroStatusBanner } from '@/components/pomodoro-status-banner'
 
 const navigation = [
   {
@@ -136,6 +137,9 @@ export default function DashboardLayout({
           {children}
         </main>
       </SidebarInset>
+      
+      {/* Global Pomodoro Status Banner - shows when timer is running on other pages */}
+      <PomodoroStatusBanner />
     </SidebarProvider>
   )
 }
