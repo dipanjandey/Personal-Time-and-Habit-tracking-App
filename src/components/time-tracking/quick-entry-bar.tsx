@@ -275,8 +275,12 @@ export function QuickEntryBar() {
               <Clock className="w-3.5 h-3.5" />
             </InputGroupButton>
           </InputGroup>
-          {endError && (
+          {endError ? (
             <p className="text-xs text-danger-foreground mt-1">{endError}</p>
+          ) : !endDateTime && (
+            <p className="text-[10px] text-primary-foreground/60 mt-0.5">
+              💡 Leave empty to start an ongoing task
+            </p>
           )}
         </div>
 

@@ -1,17 +1,19 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Play, Pause, RotateCcw, Square, Clock } from 'lucide-react'
+import { Play, Pause, RotateCcw, Square, Clock, Link } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
 import { useConfigStore } from '@/store/config-store'
 import { useTimeTrackingStore } from '@/store/time-tracking-store'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import type { TimeEntry } from '@/types/time-tracking'
 
 type TimerMode = 'pomodoro' | 'shortBreak' | 'longBreak'
 
@@ -52,7 +54,16 @@ function formatTimeHHMM(date: Date): string {
   return date.toTimeString().slice(0, 5)
 }
 
-export function PomodoroTimer() {
+// Helper to format datetime as YYYY-MM-DD HH:mm
+function formatDateTimeISO(date: Date): string {
+  return `${date.toISOString().split('T')[0]} ${date.toTimeString().slice(0, 5)}`
+}
+
+interface PomodoroTimerProps {
+  selectedOngoingTask?: TimeEntry | null
+}
+
+export function PomodoroTimer({ selectedOngoingTask }: PomodoroTimerProps) {
   const [mode, setMode] = useState<TimerMode>('pomodoro')
   const [timeLeft, setTimeLeft] = useState(DEFAULT_CONFIG.pomodoro * 60)
   const [isRunning, setIsRunning] = useState(false)
@@ -69,7 +80,7 @@ export function PomodoroTimer() {
   const [showValidation, setShowValidation] = useState(false)
   
   const { workAreas, workTypes } = useConfigStore()
-  const { entries, addEntry } = useTimeTrackingStore()
+  const { entries, addEntry, addPomodoroSession, incrementEntryPomodoros } = useTimeTrackingStore()
   
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
@@ -80,8 +91,8 @@ export function PomodoroTimer() {
     (entry) => entry.date === getTodayISO()
   ).slice(0, 5) // Show max 5 recent entries
 
-  // Check if form is valid (Area + Type required)
-  const isFormValid = selectedArea !== '' && selectedType !== ''
+  // Check if form is valid (Area + Type required, OR ongoing task selected)
+  const isFormValid = selectedOngoingTask || (selectedArea !== '' && selectedType !== '')
 
   // Initialize audio on mount
   useEffect(() => {
@@ -165,7 +176,7 @@ export function PomodoroTimer() {
     }
   }, [config])
 
-  // Save completed pomodoro to time entries
+  // Save completed pomodoro to time entries or as a pomodoro session
   // If actualDurationMinutes is provided, use that instead of full pomodoro duration
   const saveCompletedPomodoro = useCallback(async (actualDurationMinutes?: number) => {
     if (mode !== 'pomodoro') return // Don't save breaks
@@ -173,6 +184,7 @@ export function PomodoroTimer() {
     const now = new Date()
     const durationMinutes = actualDurationMinutes ?? config.pomodoro
     const startTime = new Date(now.getTime() - durationMinutes * 60 * 1000)
+    const isFullPomodoro = actualDurationMinutes === undefined
     
     // Don't save if duration is less than 1 minute
     if (durationMinutes < 1) {
@@ -183,28 +195,52 @@ export function PomodoroTimer() {
     }
     
     try {
-      await addEntry({
-        startTime: formatTimeHHMM(startTime),
-        endTime: formatTimeHHMM(now),
-        workArea: selectedArea,
-        workType: selectedType,
-        pomodoros: actualDurationMinutes ? 0 : 1, // Only count as full pomodoro if completed naturally
-        comments: comments,
-        date: getTodayISO(),
-        duration: Math.round(durationMinutes),
-        userId: '', // Will be set by the store/supabase
-      })
-      
-      toast.success(actualDurationMinutes ? 'Partial session saved!' : 'Pomodoro completed!', {
-        description: `${Math.round(durationMinutes)} min • ${selectedArea} • ${selectedType}`,
-      })
+      // If associated with an ongoing task, create a pomodoro session instead
+      if (selectedOngoingTask) {
+        // Create pomodoro session linked to the ongoing task
+        await addPomodoroSession({
+          timeEntryId: selectedOngoingTask.id,
+          startTime: formatDateTimeISO(startTime),
+          endTime: formatDateTimeISO(now),
+          duration: Math.round(durationMinutes),
+          comments: comments || null,
+          isFullPomodoro,
+        })
+        
+        // Increment pomodoro count on the parent entry (only for full pomodoros)
+        if (isFullPomodoro) {
+          await incrementEntryPomodoros(selectedOngoingTask.id)
+        }
+        
+        toast.success(isFullPomodoro ? 'Pomodoro added to task!' : 'Partial session saved!', {
+          description: `${Math.round(durationMinutes)} min added to ${selectedOngoingTask.workArea}`,
+        })
+      } else {
+        // Create independent time entry (original behavior)
+        // Use full datetime format for consistency with other entries (needed for proper sorting)
+        await addEntry({
+          startTime: formatDateTimeISO(startTime),
+          endTime: formatDateTimeISO(now),
+          workArea: selectedArea,
+          workType: selectedType,
+          pomodoros: isFullPomodoro ? 1 : 0,
+          comments: comments,
+          date: getTodayISO(),
+          duration: Math.round(durationMinutes),
+          userId: '', // Will be set by the store/supabase
+        })
+        
+        toast.success(isFullPomodoro ? 'Pomodoro completed!' : 'Partial session saved!', {
+          description: `${Math.round(durationMinutes)} min • ${selectedArea} • ${selectedType}`,
+        })
+      }
     } catch (error) {
       console.error('Failed to save pomodoro entry:', error)
       toast.error('Failed to save entry', {
         description: 'Please try again or add manually.',
       })
     }
-  }, [mode, config.pomodoro, selectedArea, selectedType, comments, addEntry])
+  }, [mode, config.pomodoro, selectedArea, selectedType, comments, selectedOngoingTask, addEntry, addPomodoroSession, incrementEntryPomodoros])
 
   // Handle timer completion
   const handleTimerComplete = useCallback(async () => {
@@ -269,7 +305,7 @@ export function PomodoroTimer() {
     if (!isFormValid) {
       setShowValidation(true)
       toast.error('Please select Area and Type', {
-        description: 'Both fields are required to start the timer.',
+        description: 'Both fields are required to start the timer (or select an ongoing task).',
       })
       return
     }
@@ -471,22 +507,33 @@ export function PomodoroTimer() {
 
           {/* Area, Type, Comments Form */}
           <div className="border-t pt-6 mt-2 space-y-4">
+            {/* Show linked task info when associated */}
+            {selectedOngoingTask && (
+              <div className="flex items-center gap-2 p-3 bg-primary/5 border border-primary/20 rounded-lg">
+                <Link className="w-4 h-4 text-primary" />
+                <span className="text-sm">
+                  Linked to: <strong>{selectedOngoingTask.workArea}</strong> • {selectedOngoingTask.workType}
+                </span>
+              </div>
+            )}
+            
             <div className="grid grid-cols-2 gap-6">
               {/* Area Select */}
               <div className="space-y-2">
                 <Label htmlFor="area" className="text-sm font-medium">
-                  Area <span className="text-destructive">*</span>
+                  Area {!selectedOngoingTask && <span className="text-destructive">*</span>}
                 </Label>
                 <Select 
-                  value={selectedArea} 
+                  value={selectedOngoingTask ? selectedOngoingTask.workArea : selectedArea} 
                   onValueChange={setSelectedArea}
-                  disabled={isRunning}
+                  disabled={isRunning || !!selectedOngoingTask}
                 >
                   <SelectTrigger 
                     id="area"
                     className={cn(
                       "w-full",
-                      showValidation && !selectedArea && "border-destructive ring-destructive"
+                      selectedOngoingTask && "opacity-60",
+                      showValidation && !selectedArea && !selectedOngoingTask && "border-destructive ring-destructive"
                     )}
                   >
                     <SelectValue placeholder="Select area..." />
@@ -499,7 +546,7 @@ export function PomodoroTimer() {
                     ))}
                   </SelectContent>
                 </Select>
-                {showValidation && !selectedArea && (
+                {showValidation && !selectedArea && !selectedOngoingTask && (
                   <p className="text-xs text-destructive">Area is required</p>
                 )}
               </div>
@@ -507,18 +554,19 @@ export function PomodoroTimer() {
               {/* Type Select */}
               <div className="space-y-2">
                 <Label htmlFor="type" className="text-sm font-medium">
-                  Type <span className="text-destructive">*</span>
+                  Type {!selectedOngoingTask && <span className="text-destructive">*</span>}
                 </Label>
                 <Select 
-                  value={selectedType} 
+                  value={selectedOngoingTask ? selectedOngoingTask.workType : selectedType} 
                   onValueChange={setSelectedType}
-                  disabled={isRunning}
+                  disabled={isRunning || !!selectedOngoingTask}
                 >
                   <SelectTrigger 
                     id="type"
                     className={cn(
                       "w-full",
-                      showValidation && !selectedType && "border-destructive ring-destructive"
+                      selectedOngoingTask && "opacity-60",
+                      showValidation && !selectedType && !selectedOngoingTask && "border-destructive ring-destructive"
                     )}
                   >
                     <SelectValue placeholder="Select type..." />
@@ -531,7 +579,7 @@ export function PomodoroTimer() {
                     ))}
                   </SelectContent>
                 </Select>
-                {showValidation && !selectedType && (
+                {showValidation && !selectedType && !selectedOngoingTask && (
                   <p className="text-xs text-destructive">Type is required</p>
                 )}
               </div>
@@ -563,9 +611,11 @@ export function PomodoroTimer() {
                 {todaysPomodoroEntries.map((entry) => (
                   <div 
                     key={entry.id}
-                    className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-2 py-2 px-3 bg-muted/50 rounded-lg text-sm"
+                    className="grid grid-cols-[auto_1fr_auto_auto_auto] items-center gap-3 py-2 px-3 bg-muted/50 rounded-lg text-sm"
                   >
-                    <span className="text-lg shrink-0">{entry.pomodoros > 0 ? '🍅' : '⏱️'}</span>
+                    <Badge variant={entry.pomodoros > 0 ? 'default' : 'outline'} className="w-8 justify-center">
+                      {entry.pomodoros}
+                    </Badge>
                     <div className="flex items-center gap-2 min-w-0 overflow-hidden">
                       <span className="font-medium truncate">{entry.workArea}</span>
                       <span className="text-muted-foreground shrink-0">•</span>
@@ -573,6 +623,11 @@ export function PomodoroTimer() {
                     </div>
                     <span className="text-muted-foreground text-right whitespace-nowrap">{entry.duration} min</span>
                     <span className="text-muted-foreground text-right whitespace-nowrap w-14">{entry.startTime?.split(' ')[1] || entry.startTime}</span>
+                    {!entry.endTime && (
+                      <Badge variant="outline" className="text-green-600 border-green-300 bg-green-50 dark:bg-green-950/30 text-xs">
+                        Ongoing
+                      </Badge>
+                    )}
                   </div>
                 ))}
               </div>

@@ -6,17 +6,23 @@ import { SummaryCards } from '@/components/time-tracking/summary-cards'
 import { TimeEntriesTable } from '@/components/time-tracking/time-entries-table'
 import { BulkUploadDialog } from '@/components/time-tracking/bulk-upload-dialog'
 import { PomodoroTimer } from '@/components/time-tracking/pomodoro-timer'
+import { OngoingTaskCard } from '@/components/time-tracking/ongoing-task-card'
 import { useTimeTrackingStore } from '@/store/time-tracking-store'
 import { useConfigStore } from '@/store/config-store'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Download, Upload, Timer, ListTodo } from 'lucide-react'
+import type { TimeEntry } from '@/types/time-tracking'
 
 export default function TrackTimePage() {
-  const { loadEntries, initializeRealtimeSubscription } = useTimeTrackingStore()
+  const { loadEntries, initializeRealtimeSubscription, getOngoingTasks, completeTask } = useTimeTrackingStore()
   const { loadWorkAreas, loadWorkTypes } = useConfigStore()
   const [bulkUploadOpen, setBulkUploadOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('entries')
+  const [selectedOngoingTask, setSelectedOngoingTask] = useState<TimeEntry | null>(null)
+  
+  // Get ongoing tasks
+  const ongoingTasks = getOngoingTasks()
 
   useEffect(() => {
     // Load initial data (user is already authenticated via middleware)
@@ -63,6 +69,25 @@ export default function TrackTimePage() {
         </TabsList>
 
         <TabsContent value="entries" className="space-y-6">
+          {/* Ongoing Tasks Section */}
+          {ongoingTasks.length > 0 && (
+            <div className="space-y-3">
+              <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                Ongoing Tasks ({ongoingTasks.length})
+              </h3>
+              <div className="grid gap-3 md:grid-cols-2">
+                {ongoingTasks.map((task) => (
+                  <OngoingTaskCard
+                    key={task.id}
+                    task={task}
+                    onComplete={completeTask}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+          
           <QuickEntryBar />
           <SummaryCards />
           {/* Show only last 10 entries in compact mode */}
@@ -70,8 +95,41 @@ export default function TrackTimePage() {
         </TabsContent>
 
         <TabsContent value="pomodoro" className="space-y-6">
+          {/* Ongoing Tasks for Association */}
+          {ongoingTasks.length > 0 && (
+            <div className="max-w-2xl mx-auto mb-4">
+              <h3 className="text-sm font-medium text-muted-foreground mb-3">
+                Associate with ongoing task (optional)
+              </h3>
+              <div className="space-y-2">
+                {ongoingTasks.map((task) => (
+                  <OngoingTaskCard
+                    key={task.id}
+                    task={task}
+                    onComplete={completeTask}
+                    isSelected={selectedOngoingTask?.id === task.id}
+                    onSelect={(id) => {
+                      if (selectedOngoingTask?.id === id) {
+                        setSelectedOngoingTask(null)
+                      } else {
+                        const selected = ongoingTasks.find(t => t.id === id)
+                        setSelectedOngoingTask(selected || null)
+                      }
+                    }}
+                    compact
+                  />
+                ))}
+              </div>
+              {selectedOngoingTask && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  ✓ Pomodoros will be added to: <strong>{selectedOngoingTask.workArea}</strong> • {selectedOngoingTask.workType}
+                </p>
+              )}
+            </div>
+          )}
+          
           <div className="max-w-2xl mx-auto">
-            <PomodoroTimer />
+            <PomodoroTimer selectedOngoingTask={selectedOngoingTask} />
           </div>
           
           {/* Show summary below the timer */}

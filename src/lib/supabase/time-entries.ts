@@ -12,7 +12,7 @@ function rowToTimeEntry(row: TimeEntryRow): TimeEntry {
     id: row.id,
     userId: row.user_id,
     startTime: row.start_time,
-    endTime: row.end_time,
+    endTime: row.end_time, // Can be null for ongoing tasks
     workArea: row.work_area,
     workType: row.work_type,
     pomodoros: row.pomodoros,

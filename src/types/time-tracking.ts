@@ -1,7 +1,7 @@
 export interface TimeEntry {
   id: string
-  startTime: string // HH:mm format
-  endTime: string // HH:mm format
+  startTime: string // HH:mm format or YYYY-MM-DD HH:mm
+  endTime: string | null // HH:mm format or YYYY-MM-DD HH:mm, null for ongoing tasks
   workArea: string
   workType: string
   pomodoros: number
@@ -9,6 +9,18 @@ export interface TimeEntry {
   date: string // ISO date
   duration: number // in minutes
   userId: string
+}
+
+export interface PomodoroSession {
+  id: string
+  timeEntryId: string | null
+  userId: string
+  startTime: string
+  endTime: string
+  duration: number
+  comments: string | null
+  isFullPomodoro: boolean
+  createdAt: string
 }
 
 export interface WorkArea {

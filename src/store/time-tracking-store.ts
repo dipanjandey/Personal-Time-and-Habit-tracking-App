@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { TimeEntry, TimerState } from '@/types/time-tracking'
+import type { TimeEntry, TimerState, PomodoroSession } from '@/types/time-tracking'
 import {
   fetchTimeEntries,
   createTimeEntry,
@@ -8,6 +8,11 @@ import {
   subscribeToTimeEntries,
   bulkCreateTimeEntries,
 } from '@/lib/supabase/time-entries'
+import {
+  createPomodoroSession as createPomodoroSessionDb,
+  fetchPomodoroSessionsForEntry,
+  fetchPomodoroSessionsForEntries,
+} from '@/lib/supabase/pomodoro-sessions'
 import { supabase } from '@/lib/supabase/client'
 
 interface TimeTrackingStore {
@@ -21,15 +26,27 @@ interface TimeTrackingStore {
   isLoading: boolean
   error: string | null
   
+  // Pomodoro sessions cache
+  pomodoroSessionsMap: Map<string, PomodoroSession[]>
+  
   // Actions
   setEntries: (entries: TimeEntry[]) => void
   loadEntries: () => Promise<void>
-  addEntry: (entry: Omit<TimeEntry, 'id'>) => Promise<void>
+  addEntry: (entry: Omit<TimeEntry, 'id'>) => Promise<TimeEntry>
   bulkAddEntries: (entries: Omit<TimeEntry, 'id'>[]) => Promise<void>
   updateEntry: (id: string, updates: Partial<TimeEntry>) => Promise<void>
   deleteEntry: (id: string) => Promise<void>
   setEditingEntryId: (id: string | null) => void
   initializeRealtimeSubscription: () => () => void
+  
+  // Ongoing tasks actions
+  getOngoingTasks: () => TimeEntry[]
+  completeTask: (id: string, endTime?: string) => Promise<void>
+  
+  // Pomodoro session actions
+  addPomodoroSession: (session: Omit<PomodoroSession, 'id' | 'createdAt' | 'userId'>) => Promise<void>
+  loadPomodoroSessionsForEntry: (entryId: string) => Promise<PomodoroSession[]>
+  incrementEntryPomodoros: (entryId: string) => Promise<void>
   
   // Timer actions
   startTimer: (activity: string, workArea: string, workType: string) => void
@@ -63,6 +80,7 @@ export const useTimeTrackingStore = create<TimeTrackingStore>((set, get) => ({
   isSearchOpen: false,
   isLoading: false,
   error: null,
+  pomodoroSessionsMap: new Map(),
   
   setEntries: (entries) => set({ entries }),
   
@@ -84,6 +102,7 @@ export const useTimeTrackingStore = create<TimeTrackingStore>((set, get) => ({
       set((state) => ({
         entries: [newEntry, ...state.entries],
       }))
+      return newEntry
     } catch (error) {
       console.error('Failed to add entry:', error)
       set({ error: 'Failed to add time entry' })
@@ -165,6 +184,91 @@ export const useTimeTrackingStore = create<TimeTrackingStore>((set, get) => ({
   },
   
   setEditingEntryId: (id) => set({ editingEntryId: id }),
+  
+  // Ongoing tasks - entries without end_time
+  getOngoingTasks: () => {
+    return get().entries.filter(e => !e.endTime)
+  },
+  
+  completeTask: async (id, endTime) => {
+    const entry = get().entries.find(e => e.id === id)
+    if (!entry) return
+    
+    // Calculate end time and duration
+    const now = new Date()
+    const finalEndTime = endTime || `${now.toISOString().split('T')[0]} ${now.toTimeString().slice(0, 5)}`
+    
+    // Parse start time to calculate duration
+    let startDateTime: Date
+    if (entry.startTime.includes(' ')) {
+      const [date, time] = entry.startTime.split(' ')
+      startDateTime = new Date(`${date}T${time}:00`)
+    } else {
+      startDateTime = new Date(`${entry.date}T${entry.startTime}:00`)
+    }
+    
+    // Parse end time
+    let endDateTime: Date
+    if (finalEndTime.includes(' ')) {
+      const [date, time] = finalEndTime.split(' ')
+      endDateTime = new Date(`${date}T${time}:00`)
+    } else {
+      endDateTime = new Date(`${entry.date}T${finalEndTime}:00`)
+    }
+    
+    const duration = Math.floor((endDateTime.getTime() - startDateTime.getTime()) / (1000 * 60))
+    
+    await get().updateEntry(id, {
+      endTime: finalEndTime,
+      duration: Math.max(0, duration),
+    })
+  },
+  
+  // Pomodoro session actions
+  addPomodoroSession: async (session) => {
+    try {
+      set({ error: null })
+      const newSession = await createPomodoroSessionDb(session)
+      
+      // Update cache if linked to an entry
+      if (session.timeEntryId) {
+        set((state) => {
+          const newMap = new Map(state.pomodoroSessionsMap)
+          const existing = newMap.get(session.timeEntryId!) || []
+          newMap.set(session.timeEntryId!, [...existing, newSession])
+          return { pomodoroSessionsMap: newMap }
+        })
+      }
+    } catch (error) {
+      console.error('Failed to add pomodoro session:', error)
+      set({ error: 'Failed to add pomodoro session' })
+      throw error
+    }
+  },
+  
+  loadPomodoroSessionsForEntry: async (entryId) => {
+    try {
+      const sessions = await fetchPomodoroSessionsForEntry(entryId)
+      set((state) => {
+        const newMap = new Map(state.pomodoroSessionsMap)
+        newMap.set(entryId, sessions)
+        return { pomodoroSessionsMap: newMap }
+      })
+      return sessions
+    } catch (error) {
+      console.error('Failed to load pomodoro sessions:', error)
+      throw error
+    }
+  },
+  
+  incrementEntryPomodoros: async (entryId) => {
+    const entry = get().entries.find(e => e.id === entryId)
+    if (!entry) return
+    
+    await get().updateEntry(entryId, {
+      pomodoros: entry.pomodoros + 1,
+    })
+  },
   
   startTimer: (activity, workArea, workType) => set({
     timer: {

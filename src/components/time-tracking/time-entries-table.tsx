@@ -12,12 +12,13 @@ import {
   type SortingState,
   type ColumnFiltersState,
 } from '@tanstack/react-table'
-import { Trash2, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
+import { Trash2, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowUpDown, ArrowUp, ArrowDown, Info } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Combobox } from '@/components/ui/combobox'
+import { PomodoroDetailsDialog } from '@/components/time-tracking/pomodoro-details-dialog'
 import { useTimeTrackingStore } from '@/store/time-tracking-store'
 import { useConfigStore } from '@/store/config-store'
 import { calculateDuration, formatDuration, getTodayDate } from '@/lib/time-utils'
@@ -253,6 +254,10 @@ export function TimeEntriesTable({
   const [editingValue, setEditingValue] = useState<any>(null)
   const [editingError, setEditingError] = useState<string>('')
   const [pageSize, setPageSize] = useState(10)
+  
+  // Pomodoro details dialog state
+  const [pomodoroDetailsOpen, setPomodoroDetailsOpen] = useState(false)
+  const [selectedEntryForDetails, setSelectedEntryForDetails] = useState<TimeEntry | null>(null)
 
   // Get entries to display - limit if specified
   const displayEntries = useMemo(() => {
@@ -481,12 +486,22 @@ export function TimeEntriesTable({
             )
           }
 
+          // Show "Ongoing" badge for entries without end time
+          if (!value) {
+            return (
+              <Badge variant="outline" className="text-green-600 border-green-300 bg-green-50 dark:bg-green-950/30">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse mr-1.5" />
+                Ongoing
+              </Badge>
+            )
+          }
+
           return (
             <div
               onClick={() => handleStartEdit(row.original.id, 'endTime', value, row.original.date)}
               className="cursor-pointer font-semibold text-xs"
             >
-              {value ? formatDateTimeForDisplay(value, row.original.date) : <span className="text-muted-foreground">—</span>}
+              {formatDateTimeForDisplay(value, row.original.date)}
             </div>
           )
         },
@@ -573,7 +588,7 @@ export function TimeEntriesTable({
       }),
       columnHelper.accessor('pomodoros', {
         header: ({ column }) => <SortableHeader column={column}>🍅</SortableHeader>,
-        size: 80,
+        size: 100,
         enableSorting: true,
         cell: ({ row, getValue }) => {
           const value = getValue()
@@ -596,11 +611,28 @@ export function TimeEntriesTable({
           }
 
           return (
-            <div
-              onClick={() => handleStartEdit(row.original.id, 'pomodoros', value)}
-              className="cursor-pointer text-center"
-            >
-              <Badge variant={value > 0 ? 'default' : 'outline'}>{value}</Badge>
+            <div className="flex items-center justify-center gap-1">
+              <div
+                onClick={() => handleStartEdit(row.original.id, 'pomodoros', value)}
+                className="cursor-pointer"
+              >
+                <Badge variant={value > 0 ? 'default' : 'outline'}>{value}</Badge>
+              </div>
+              {value > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setSelectedEntryForDetails(row.original)
+                    setPomodoroDetailsOpen(true)
+                  }}
+                  title="View pomodoro details"
+                >
+                  <Info className="w-3.5 h-3.5 text-muted-foreground" />
+                </Button>
+              )}
             </div>
           )
         },
@@ -931,6 +963,13 @@ export function TimeEntriesTable({
           <div className="text-lg font-bold text-foreground">Total: {formatDuration(totalDuration)}</div>
         </div>
       </div>
+      
+      {/* Pomodoro Details Dialog */}
+      <PomodoroDetailsDialog
+        open={pomodoroDetailsOpen}
+        onOpenChange={setPomodoroDetailsOpen}
+        entry={selectedEntryForDetails}
+      />
     </div>
   )
 }

@@ -122,7 +122,7 @@ export interface Database {
           id: string
           user_id: string
           start_time: string
-          end_time: string
+          end_time: string | null
           work_area: string
           work_type: string
           pomodoros: number
@@ -136,13 +136,13 @@ export interface Database {
           id?: string
           user_id: string
           start_time: string
-          end_time: string
+          end_time?: string | null
           work_area: string
           work_type: string
           pomodoros?: number
           comments?: string
           date: string
-          duration: number
+          duration?: number
           created_at?: string
           updated_at?: string
         }
@@ -150,7 +150,7 @@ export interface Database {
           id?: string
           user_id?: string
           start_time?: string
-          end_time?: string
+          end_time?: string | null
           work_area?: string
           work_type?: string
           pomodoros?: number
@@ -159,6 +159,41 @@ export interface Database {
           duration?: number
           created_at?: string
           updated_at?: string
+        }
+      }
+      pomodoro_sessions: {
+        Row: {
+          id: string
+          time_entry_id: string | null
+          user_id: string
+          start_time: string
+          end_time: string
+          duration: number
+          comments: string | null
+          is_full_pomodoro: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          time_entry_id?: string | null
+          user_id: string
+          start_time: string
+          end_time: string
+          duration: number
+          comments?: string | null
+          is_full_pomodoro?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          time_entry_id?: string | null
+          user_id?: string
+          start_time?: string
+          end_time?: string
+          duration?: number
+          comments?: string | null
+          is_full_pomodoro?: boolean
+          created_at?: string
         }
       }
     }
