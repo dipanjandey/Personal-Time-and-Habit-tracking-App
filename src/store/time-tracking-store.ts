@@ -127,22 +127,13 @@ export const useTimeTrackingStore = create<TimeTrackingStore>((set, get) => ({
   updateEntry: async (id, updates) => {
     try {
       set({ error: null })
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/4b7757e0-fdc9-4123-97fc-24028150b2c0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'time-tracking-store.ts:94',message:'updateEntry store function called',data:{id,updates},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1-ENTER-SAVE-LOGIC'})}).catch(()=>{});
-      // #endregion
       const updatedEntry = await updateTimeEntryDb(id, updates)
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/4b7757e0-fdc9-4123-97fc-24028150b2c0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'time-tracking-store.ts:98',message:'After updateTimeEntryDb success',data:{id,updatedEntry},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1-ENTER-SAVE-LOGIC'})}).catch(()=>{});
-      // #endregion
       set((state) => ({
         entries: state.entries.map((entry) =>
           entry.id === id ? updatedEntry : entry
         ),
       }))
     } catch (error) {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/4b7757e0-fdc9-4123-97fc-24028150b2c0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'time-tracking-store.ts:107',message:'updateEntry failed with error',data:{id,error:String(error)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1-ENTER-SAVE-LOGIC'})}).catch(()=>{});
-      // #endregion
       console.error('Failed to update entry:', error)
       set({ error: 'Failed to update time entry' })
       throw error
@@ -196,7 +187,14 @@ export const useTimeTrackingStore = create<TimeTrackingStore>((set, get) => ({
     
     // Calculate end time and duration
     const now = new Date()
-    const finalEndTime = endTime || `${now.toISOString().split('T')[0]} ${now.toTimeString().slice(0, 5)}`
+    // Use local date/time, not UTC
+    const year = now.getFullYear()
+    const month = String(now.getMonth() + 1).padStart(2, '0')
+    const day = String(now.getDate()).padStart(2, '0')
+    const hours = String(now.getHours()).padStart(2, '0')
+    const minutes = String(now.getMinutes()).padStart(2, '0')
+    const localDateTimeStr = `${year}-${month}-${day} ${hours}:${minutes}`
+    const finalEndTime = endTime || localDateTimeStr
     
     // Parse start time to calculate duration
     let startDateTime: Date

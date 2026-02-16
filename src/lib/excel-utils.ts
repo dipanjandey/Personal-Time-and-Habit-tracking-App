@@ -129,9 +129,15 @@ function parseDateValue(value: string | number | undefined): string {
       return `${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}`
     }
     // Try other common formats
-    const date = new Date(value)
+    // If it looks like an ISO date-only string, append T00:00:00 to force local interpretation
+    const dateStr = /^\d{4}-\d{2}-\d{2}$/.test(value) ? value + 'T00:00:00' : value
+    const date = new Date(dateStr)
     if (!isNaN(date.getTime())) {
-      return date.toISOString().split('T')[0]
+      // Use local date, not UTC
+      const year = date.getFullYear()
+      const month = String(date.getMonth() + 1).padStart(2, '0')
+      const day = String(date.getDate()).padStart(2, '0')
+      return `${year}-${month}-${day}`
     }
     return value
   }
@@ -139,8 +145,12 @@ function parseDateValue(value: string | number | undefined): string {
   // If it's a number (Excel serial date)
   if (typeof value === 'number') {
     // Excel serial date (days since 1899-12-30)
+    // The epoch math produces a UTC timestamp, so use UTC methods to extract the date
     const date = new Date((value - 25569) * 86400 * 1000)
-    return date.toISOString().split('T')[0]
+    const year = date.getUTCFullYear()
+    const month = String(date.getUTCMonth() + 1).padStart(2, '0')
+    const day = String(date.getUTCDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
   }
 
   return String(value)
@@ -161,7 +171,8 @@ function isValidDate(date: string): boolean {
   const match = date.match(/^\d{4}-\d{2}-\d{2}$/)
   if (!match) return false
   
-  const d = new Date(date)
+  // Append T00:00:00 to force local interpretation and avoid UTC midnight shift
+  const d = new Date(date + 'T00:00:00')
   return !isNaN(d.getTime())
 }
 

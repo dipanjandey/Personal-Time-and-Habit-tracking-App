@@ -1,4 +1,4 @@
-import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, isWithinInterval, parseISO } from 'date-fns'
+import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns'
 import type { TimeEntry } from '@/types/time-tracking'
 
 export type TimePeriod = 'today' | 'week' | 'month' | 'custom'
@@ -89,14 +89,20 @@ export function getDateRange(period: TimePeriod, customRange?: DateRange): DateR
 
 /**
  * Filter entries by date range
+ * Note: entry.date is in YYYY-MM-DD format (local date, not timezone-aware)
+ * We compare against the date part only to avoid timezone issues
  */
 export function filterEntriesByDateRange(
   entries: TimeEntry[],
   dateRange: DateRange
 ): TimeEntry[] {
+  // Get date strings for range boundaries (ignore time)
+  const fromDateStr = format(dateRange.from, 'yyyy-MM-dd')
+  const toDateStr = format(dateRange.to, 'yyyy-MM-dd')
+  
   return entries.filter((entry) => {
-    const entryDate = parseISO(entry.date)
-    return isWithinInterval(entryDate, { start: dateRange.from, end: dateRange.to })
+    // Compare dates as strings to avoid timezone conversion issues
+    return entry.date >= fromDateStr && entry.date <= toDateStr
   })
 }
 
@@ -253,7 +259,7 @@ export function calculateInsights(
     { date: '', duration: 0, pomodoros: 0 }
   )
   if (mostProductiveDay.duration > 0) {
-    const dayName = format(new Date(mostProductiveDay.date), 'EEEE')
+    const dayName = format(toLocalDate(mostProductiveDay.date), 'EEEE')
     insights.push({
       title: 'Most Productive Day',
       value: `${dayName} - ${formatDuration(mostProductiveDay.duration)}`,
@@ -339,15 +345,37 @@ export function formatPercentage(value: number): string {
 }
 
 /**
+ * Parse a date string or Date to a local Date object.
+ * When given a string like "2026-02-16", `new Date("2026-02-16")` creates
+ * midnight UTC which shifts the day in UTC-negative timezones.
+ * Appending 'T00:00:00' forces local timezone interpretation.
+ */
+function toLocalDate(date: string | Date): Date {
+  if (date instanceof Date) return date
+  // If it's a date-only string (YYYY-MM-DD), append T00:00:00 to force local
+  if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return new Date(date + 'T00:00:00')
+  }
+  return new Date(date)
+}
+
+/**
  * Format date for chart axis (e.g., "Feb 5, Wed")
  */
 export function formatChartDate(date: string | Date): string {
-  return format(new Date(date), 'MMM d, EEE')
+  return format(toLocalDate(date), 'MMM d, EEE')
 }
 
 /**
  * Format date for display (e.g., "Jan 15, 2026")
  */
 export function formatDisplayDate(date: string | Date): string {
-  return format(new Date(date), 'MMM d, yyyy')
+  return format(toLocalDate(date), 'MMM d, yyyy')
+}
+
+/**
+ * Format date with day name for tooltip (e.g., "Monday, Jan 15, 2026")
+ */
+export function formatTooltipDate(date: string | Date): string {
+  return format(toLocalDate(date), 'EEEE, MMM d, yyyy')
 }

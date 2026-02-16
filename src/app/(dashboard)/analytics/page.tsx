@@ -34,6 +34,7 @@ import {
   formatPercentage,
   formatChartDate,
   formatDisplayDate,
+  formatTooltipDate,
   type TimePeriod,
   type DateRange,
 } from '@/lib/analytics-utils'
@@ -55,14 +56,22 @@ export default function AnalyticsPage() {
   // Get computed chart colors (adapts to light/dark mode)
   const CHART_COLORS = useChartColors()
 
-  const { loadEntries } = useTimeTrackingStore()
+  const { loadEntries, initializeRealtimeSubscription } = useTimeTrackingStore()
   const { loadWorkAreas, loadWorkTypes } = useConfigStore()
 
   useEffect(() => {
+    // Force load fresh entries on mount
     loadEntries()
     loadWorkAreas()
     loadWorkTypes()
-  }, [loadEntries, loadWorkAreas, loadWorkTypes])
+
+    // Set up real-time subscription to keep data in sync
+    const unsubscribe = initializeRealtimeSubscription()
+
+    return () => {
+      if (unsubscribe) unsubscribe()
+    }
+  }, [loadEntries, loadWorkAreas, loadWorkTypes, initializeRealtimeSubscription])
 
   // Derive custom date range from dateFrom and dateTo
   const customDateRange = useMemo(() => {
@@ -395,7 +404,7 @@ export default function AnalyticsPage() {
                 <ChartTooltip
                   content={
                     <ChartTooltipContent
-                      labelFormatter={(label) => formatDisplayDate(label as string)}
+                      labelFormatter={(label) => formatTooltipDate(label as string)}
                       formatter={(value) => formatDuration(value as number)}
                     />
                   }

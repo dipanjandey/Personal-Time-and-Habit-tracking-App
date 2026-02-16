@@ -82,15 +82,15 @@ export function DateTimeInput({
 
   // Handle popover state changes
   const handleOpenChange = (newOpen: boolean) => {
-    // #region agent log
-    console.log('[DEBUG H2-DROPDOWN-STATE] Popover open state changing:', {newOpen,oldOpen:open,selectedDate:selectedDate?.toISOString(),selectedHours,selectedMinutes,selectedPeriod});
-    fetch('http://127.0.0.1:7242/ingest/4b7757e0-fdc9-4123-97fc-24028150b2c0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'datetime-input.tsx:84',message:'Popover open state changing',data:{newOpen,oldOpen:open,selectedDate:selectedDate?.toISOString(),selectedHours,selectedMinutes,selectedPeriod},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H2-DROPDOWN-STATE'})}).catch(()=>{});
-    // #endregion
     setOpen(newOpen)
     
     // When closing, send current values to parent
     if (!newOpen && selectedDate) {
-      const isoDate = selectedDate.toISOString().split('T')[0]
+      // Use local date, not UTC
+      const year = selectedDate.getFullYear()
+      const month = String(selectedDate.getMonth() + 1).padStart(2, '0')
+      const day = String(selectedDate.getDate()).padStart(2, '0')
+      const isoDate = `${year}-${month}-${day}`
       const time24 = formatTo24Hour(selectedHours, selectedMinutes, selectedPeriod)
       onPopoverOpenChange?.(newOpen, isoDate, time24)
     } else {
@@ -232,22 +232,10 @@ export function DateTimeInput({
     if (e.key === 'Enter') {
       e.preventDefault()
       e.stopPropagation()
-      // #region agent log
-      console.log('[DEBUG H1-ENTER-PARSE] Enter key pressed on input:', {inputValue,currentDate:date,currentTime:time});
-      fetch('http://127.0.0.1:7242/ingest/4b7757e0-fdc9-4123-97fc-24028150b2c0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'datetime-input.tsx:228',message:'Enter key pressed on input',data:{inputValue,currentDate:date,currentTime:time},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1-ENTER-PARSE'})}).catch(()=>{});
-      // #endregion
       const parsed = parseUserInput(inputValue)
-      // #region agent log
-      console.log('[DEBUG H1-ENTER-PARSE] After parseUserInput:', {parsed,inputValue});
-      fetch('http://127.0.0.1:7242/ingest/4b7757e0-fdc9-4123-97fc-24028150b2c0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'datetime-input.tsx:231',message:'After parseUserInput',data:{parsed,inputValue},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1-ENTER-PARSE'})}).catch(()=>{});
-      // #endregion
       if (parsed) {
         onDateChange(parsed.date)
         onTimeChange(parsed.time)
-        // #region agent log
-        console.log('[DEBUG H1-ENTER-CALLBACK] Before calling onEnterKey:', {parsedDate:parsed.date,parsedTime:parsed.time,hasOnEnterKey:!!onEnterKey});
-        fetch('http://127.0.0.1:7242/ingest/4b7757e0-fdc9-4123-97fc-24028150b2c0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'datetime-input.tsx:235',message:'Before calling onEnterKey',data:{parsedDate:parsed.date,parsedTime:parsed.time,hasOnEnterKey:!!onEnterKey},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1-ENTER-CALLBACK'})}).catch(()=>{});
-        // #endregion
         // Call the callback with parsed values so parent can use them immediately
         if (onEnterKey) {
           onEnterKey(parsed.date, parsed.time)
@@ -255,10 +243,6 @@ export function DateTimeInput({
           inputRef.current?.blur()
         }
       } else {
-        // #region agent log
-        console.log('[DEBUG H1-ENTER-PARSE] Parse failed - invalid input:', {inputValue});
-        fetch('http://127.0.0.1:7242/ingest/4b7757e0-fdc9-4123-97fc-24028150b2c0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'datetime-input.tsx:242',message:'Parse failed - invalid input',data:{inputValue},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1-ENTER-PARSE'})}).catch(()=>{});
-        // #endregion
         // Invalid input - just call onEnterKey without values
         if (onEnterKey) {
           onEnterKey()
@@ -287,7 +271,11 @@ export function DateTimeInput({
   const handleDateSelect = (newDate: Date | undefined) => {
     if (newDate) {
       setSelectedDate(newDate)
-      const isoDate = newDate.toISOString().split('T')[0]
+      // Use local date, not UTC
+      const year = newDate.getFullYear()
+      const month = String(newDate.getMonth() + 1).padStart(2, '0')
+      const day = String(newDate.getDate()).padStart(2, '0')
+      const isoDate = `${year}-${month}-${day}`
       onDateChange(isoDate)
     }
   }
@@ -300,27 +288,16 @@ export function DateTimeInput({
   }
 
   const handleHourChange = (h: string) => {
-    // #region agent log
-    console.log('[DEBUG H2-DROPDOWN-STATE] Hour changed:', {newHour:h,oldHour:selectedHours,minutes:selectedMinutes,period:selectedPeriod,popoverOpen:open});
-    fetch('http://127.0.0.1:7242/ingest/4b7757e0-fdc9-4123-97fc-24028150b2c0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'datetime-input.tsx:282',message:'Hour changed',data:{newHour:h,oldHour:selectedHours,minutes:selectedMinutes,period:selectedPeriod,popoverOpen:open},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H2-DROPDOWN-STATE'})}).catch(()=>{});
-    // #endregion
     setSelectedHours(h)
     handleTimeChange(h, selectedMinutes, selectedPeriod)
   }
 
   const handleMinuteChange = (m: string) => {
-    // #region agent log
-    console.log('[DEBUG H2-DROPDOWN-STATE] Minute changed:', {newMinute:m,oldMinute:selectedMinutes,hours:selectedHours,period:selectedPeriod,popoverOpen:open});
-    fetch('http://127.0.0.1:7242/ingest/4b7757e0-fdc9-4123-97fc-24028150b2c0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'datetime-input.tsx:289',message:'Minute changed',data:{newMinute:m,oldMinute:selectedMinutes,hours:selectedHours,period:selectedPeriod,popoverOpen:open},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H2-DROPDOWN-STATE'})}).catch(()=>{});
-    // #endregion
     setSelectedMinutes(m)
     handleTimeChange(selectedHours, m, selectedPeriod)
   }
 
   const handlePeriodChange = (p: string) => {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/4b7757e0-fdc9-4123-97fc-24028150b2c0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'datetime-input.tsx:296',message:'Period changed',data:{newPeriod:p,oldPeriod:selectedPeriod,hours:selectedHours,minutes:selectedMinutes,popoverOpen:open},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H2-DROPDOWN-STATE'})}).catch(()=>{});
-    // #endregion
     setSelectedPeriod(p)
     handleTimeChange(selectedHours, selectedMinutes, p)
   }
@@ -365,10 +342,6 @@ export function DateTimeInput({
           onInteractOutside={(e) => {
             // Prevent closing when interacting with Select dropdowns or calendar elements
             const target = e.target as HTMLElement
-            // #region agent log
-            console.log('[DEBUG H2-DROPDOWN-PREVENT] onInteractOutside fired:', {targetTag:target.tagName,targetClass:target.className,targetRole:target.getAttribute('role'),closestListbox:!!target.closest('[role="listbox"]'),closestSelectContent:!!target.closest('[data-radix-select-content]')});
-            fetch('http://127.0.0.1:7242/ingest/4b7757e0-fdc9-4123-97fc-24028150b2c0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'datetime-input.tsx:335',message:'onInteractOutside fired',data:{targetTag:target.tagName,targetClass:target.className,targetRole:target.getAttribute('role'),closestListbox:!!target.closest('[role="listbox"]'),closestSelectContent:!!target.closest('[data-radix-select-content]')},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H2-DROPDOWN-PREVENT'})}).catch(()=>{});
-            // #endregion
             
             // Check if interaction is with Select dropdown components
             const isSelectContent = target.closest('[role="listbox"]') || 
@@ -386,11 +359,6 @@ export function DateTimeInput({
             
             // Check if the target is the input field itself (part of this component)
             const isInputField = target === inputRef.current || target.closest('input') === inputRef.current
-            
-            // #region agent log
-            console.log('[DEBUG H2-DROPDOWN-PREVENT] Element check results:', {isSelectContent:!!isSelectContent,isCalendarElement:!!isCalendarElement,isInputField,shouldPrevent:!!(isSelectContent || isCalendarElement || isInputField)});
-            fetch('http://127.0.0.1:7242/ingest/4b7757e0-fdc9-4123-97fc-24028150b2c0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'datetime-input.tsx:356',message:'Element check results',data:{isSelectContent:!!isSelectContent,isCalendarElement:!!isCalendarElement,isInputField,shouldPrevent:!!(isSelectContent || isCalendarElement || isInputField)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H2-DROPDOWN-PREVENT'})}).catch(()=>{});
-            // #endregion
             
             if (isSelectContent || isCalendarElement || isInputField) {
               e.preventDefault()

@@ -16,14 +16,23 @@ import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import type { TimeEntry } from '@/types/time-tracking'
 
-// Helper to get today's date in ISO format
+// Helper to get today's date in local YYYY-MM-DD format
 function getTodayISO(): string {
-  return new Date().toISOString().split('T')[0]
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
-// Helper to format datetime as YYYY-MM-DD HH:mm
+// Helper to format datetime as YYYY-MM-DD HH:mm (local time, not UTC)
 function formatDateTimeISO(date: Date): string {
-  return `${date.toISOString().split('T')[0]} ${date.toTimeString().slice(0, 5)}`
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  return `${year}-${month}-${day} ${hours}:${minutes}`
 }
 
 interface PomodoroTimerProps {

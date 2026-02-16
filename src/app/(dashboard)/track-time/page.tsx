@@ -12,10 +12,11 @@ import { useConfigStore } from '@/store/config-store'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Download, Upload, Timer, ListTodo } from 'lucide-react'
+import { exportToCSV } from '@/lib/export-utils'
 import type { TimeEntry } from '@/types/time-tracking'
 
 export default function TrackTimePage() {
-  const { loadEntries, initializeRealtimeSubscription, getOngoingTasks, completeTask } = useTimeTrackingStore()
+  const { entries, loadEntries, initializeRealtimeSubscription, getOngoingTasks, completeTask } = useTimeTrackingStore()
   const { loadWorkAreas, loadWorkTypes } = useConfigStore()
   const [bulkUploadOpen, setBulkUploadOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('entries')
@@ -47,7 +48,7 @@ export default function TrackTimePage() {
             <Upload className="w-4 h-4 mr-2" />
             Bulk Upload
           </Button>
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => exportToCSV(entries)}>
             <Download className="w-4 h-4 mr-2" />
             Export
           </Button>

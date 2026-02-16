@@ -31,7 +31,12 @@ export function getCurrentTime(): string {
 }
 
 export function getTodayDate(): string {
-  return new Date().toISOString().split('T')[0]
+  const now = new Date()
+  // Use local date, not UTC
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
 export function getWeekStartDate(): string {
@@ -41,7 +46,10 @@ export function getWeekStartDate(): string {
   
   const monday = new Date(today)
   monday.setDate(today.getDate() - daysFromMonday)
-  monday.setHours(0, 0, 0, 0)
   
-  return monday.toISOString().split('T')[0]
+  // Use local date, not UTC
+  const year = monday.getFullYear()
+  const month = String(monday.getMonth() + 1).padStart(2, '0')
+  const day = String(monday.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }

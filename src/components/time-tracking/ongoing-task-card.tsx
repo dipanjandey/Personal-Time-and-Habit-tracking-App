@@ -6,11 +6,12 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import { CompleteTaskButton } from './complete-task-button'
 import type { TimeEntry } from '@/types/time-tracking'
 
 interface OngoingTaskCardProps {
   task: TimeEntry
-  onComplete: (id: string) => void
+  onComplete: (id: string, endTime?: string) => void
   isSelected?: boolean
   onSelect?: (id: string) => void
   compact?: boolean
@@ -89,9 +90,8 @@ export function OngoingTaskCard({
     }
   }
   
-  const handleComplete = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    onComplete(task.id)
+  const handleComplete = (endTime?: string) => {
+    onComplete(task.id, endTime)
   }
   
   if (compact) {
@@ -142,50 +142,43 @@ export function OngoingTaskCard({
       isSelected && "ring-2 ring-primary"
     )}>
       <div className="h-1 bg-green-500" />
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="flex items-center gap-1.5">
-                <Circle className="w-2.5 h-2.5 fill-green-500 text-green-500 animate-pulse" />
-                <span className="text-xs font-medium text-green-600 uppercase">Ongoing</span>
-              </div>
-            </div>
-            
-            <div className="flex flex-wrap items-center gap-2 mb-2">
-              <Badge variant="secondary">{task.workArea}</Badge>
-              <Badge variant="outline">{task.workType}</Badge>
-              {task.pomodoros > 0 && (
-                <Badge variant="default">🍅 {task.pomodoros}</Badge>
-              )}
-            </div>
-            
-            <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
-              <div className="flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5" />
-                <span>Started: {formatStartTime(task.startTime, task.date)}</span>
-              </div>
-              <div className="font-medium text-foreground">
-                ⏱️ {elapsed}
-              </div>
-            </div>
-            
-            {task.comments && (
-              <p className="text-sm text-muted-foreground line-clamp-2">
-                📝 {task.comments}
-              </p>
+      <CardContent className="p-4 pt-2">
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <div className="flex items-center gap-1.5">
+            <Circle className="w-2.5 h-2.5 fill-green-500 text-green-500 animate-pulse" />
+            <span className="text-xs font-medium text-green-600 uppercase">Ongoing</span>
+          </div>
+          
+          <CompleteTaskButton
+            onComplete={handleComplete}
+            className="flex-shrink-0"
+          />
+        </div>
+        
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-wrap items-center gap-2 mb-2">
+            <Badge variant="secondary">{task.workArea}</Badge>
+            <Badge variant="outline">{task.workType}</Badge>
+            {task.pomodoros > 0 && (
+              <Badge variant="default">🍅 {task.pomodoros}</Badge>
             )}
           </div>
           
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleComplete}
-            className="flex-shrink-0 gap-1.5"
-          >
-            <Check className="w-4 h-4" />
-            Complete
-          </Button>
+          <div className="flex flex-col md:flex-row md:items-center md:gap-4 gap-1 text-sm text-muted-foreground mb-2">
+            <div className="flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5" />
+              <span>Started: {formatStartTime(task.startTime, task.date)}</span>
+            </div>
+            <div className="font-medium text-foreground">
+              ⏱️ {elapsed}
+            </div>
+          </div>
+          
+          {task.comments && (
+            <p className="text-sm text-muted-foreground line-clamp-2">
+              📝 {task.comments}
+            </p>
+          )}
         </div>
       </CardContent>
     </Card>
