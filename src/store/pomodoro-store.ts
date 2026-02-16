@@ -55,6 +55,7 @@ interface PomodoroStore {
   setLinkedTaskId: (id: string | null) => void
   setTimerVisible: (visible: boolean) => void
   
+  updateConfig: (config: Partial<PomodoroConfig>) => void
   incrementCompletedPomodoros: () => void
   getInitialTime: (mode: TimerMode) => number
   getElapsedMinutes: () => number
@@ -109,11 +110,11 @@ export const usePomodoroStore = create<PomodoroStore>()(
       
       reset: () => {
         const { mode, config } = get()
-        const initialTime = mode === 'pomodoro' 
+        const initialTime = Math.round(mode === 'pomodoro' 
           ? config.pomodoro * 60 
           : mode === 'shortBreak' 
             ? config.shortBreak * 60 
-            : config.longBreak * 60
+            : config.longBreak * 60)
         
         set({
           isRunning: false,
@@ -156,9 +157,9 @@ export const usePomodoroStore = create<PomodoroStore>()(
         
         // Move to next mode
         const nextMode: TimerMode = mode === 'pomodoro' ? 'shortBreak' : 'pomodoro'
-        const nextTimeLeft = nextMode === 'pomodoro' 
+        const nextTimeLeft = Math.round(nextMode === 'pomodoro' 
           ? config.pomodoro * 60 
-          : config.shortBreak * 60
+          : config.shortBreak * 60)
         
         set({
           isRunning: false,
@@ -174,16 +175,23 @@ export const usePomodoroStore = create<PomodoroStore>()(
       tick: () => {
         const { isRunning, timeLeft } = get()
         
-        if (!isRunning || timeLeft <= 0) {
-          if (timeLeft <= 0 && isRunning) {
-            // Timer completed
-            set({ isRunning: false, startedAt: null, pausedTimeLeft: null })
-            return true
-          }
-          return false
+        if (!isRunning) return false
+        
+        if (timeLeft <= 0) {
+          // Timer already at 0, mark completed
+          set({ isRunning: false, startedAt: null, pausedTimeLeft: null })
+          return true
         }
         
-        set({ timeLeft: timeLeft - 1 })
+        const newTimeLeft = timeLeft - 1
+        
+        if (newTimeLeft <= 0) {
+          // Timer just reached 0, mark completed immediately
+          set({ timeLeft: 0, isRunning: false, startedAt: null, pausedTimeLeft: null })
+          return true
+        }
+        
+        set({ timeLeft: newTimeLeft })
         return false
       },
       
@@ -191,11 +199,11 @@ export const usePomodoroStore = create<PomodoroStore>()(
         const { config, isRunning } = get()
         if (isRunning) return // Don't change mode while running
         
-        const initialTime = mode === 'pomodoro' 
+        const initialTime = Math.round(mode === 'pomodoro' 
           ? config.pomodoro * 60 
           : mode === 'shortBreak' 
             ? config.shortBreak * 60 
-            : config.longBreak * 60
+            : config.longBreak * 60)
         
         set({
           mode,
@@ -211,6 +219,20 @@ export const usePomodoroStore = create<PomodoroStore>()(
       setLinkedTaskId: (linkedTaskId) => set({ linkedTaskId }),
       setTimerVisible: (isTimerVisible) => set({ isTimerVisible }),
       
+      updateConfig: (newConfig) => {
+        const { config, isRunning, mode } = get()
+        if (isRunning) return // Don't change config while running
+        
+        const updated = { ...config, ...newConfig }
+        const initialTime = Math.round(mode === 'pomodoro'
+          ? updated.pomodoro * 60
+          : mode === 'shortBreak'
+            ? updated.shortBreak * 60
+            : updated.longBreak * 60)
+        
+        set({ config: updated, timeLeft: initialTime })
+      },
+      
       incrementCompletedPomodoros: () => {
         set((state) => ({ completedPomodoros: state.completedPomodoros + 1 }))
       },
@@ -219,13 +241,13 @@ export const usePomodoroStore = create<PomodoroStore>()(
         const { config } = get()
         switch (mode) {
           case 'pomodoro':
-            return config.pomodoro * 60
+            return Math.round(config.pomodoro * 60)
           case 'shortBreak':
-            return config.shortBreak * 60
+            return Math.round(config.shortBreak * 60)
           case 'longBreak':
-            return config.longBreak * 60
+            return Math.round(config.longBreak * 60)
           default:
-            return config.pomodoro * 60
+            return Math.round(config.pomodoro * 60)
         }
       },
       

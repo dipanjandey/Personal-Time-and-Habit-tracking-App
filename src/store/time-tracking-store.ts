@@ -12,6 +12,7 @@ import {
   createPomodoroSession as createPomodoroSessionDb,
   fetchPomodoroSessionsForEntry,
   fetchPomodoroSessionsForEntries,
+  deletePomodoroSession as deletePomodoroSessionDb,
 } from '@/lib/supabase/pomodoro-sessions'
 import { supabase } from '@/lib/supabase/client'
 
@@ -47,6 +48,8 @@ interface TimeTrackingStore {
   addPomodoroSession: (session: Omit<PomodoroSession, 'id' | 'createdAt' | 'userId'>) => Promise<void>
   loadPomodoroSessionsForEntry: (entryId: string) => Promise<PomodoroSession[]>
   incrementEntryPomodoros: (entryId: string) => Promise<void>
+  decrementEntryPomodoros: (entryId: string) => Promise<void>
+  removePomodoroSession: (sessionId: string, entryId: string) => Promise<void>
   
   // Timer actions
   startTimer: (activity: string, workArea: string, workType: string) => void
@@ -266,6 +269,37 @@ export const useTimeTrackingStore = create<TimeTrackingStore>((set, get) => ({
     await get().updateEntry(entryId, {
       pomodoros: entry.pomodoros + 1,
     })
+  },
+  
+  decrementEntryPomodoros: async (entryId) => {
+    const entry = get().entries.find(e => e.id === entryId)
+    if (!entry || entry.pomodoros <= 0) return
+    
+    await get().updateEntry(entryId, {
+      pomodoros: entry.pomodoros - 1,
+    })
+  },
+  
+  removePomodoroSession: async (sessionId, entryId) => {
+    try {
+      set({ error: null })
+      await deletePomodoroSessionDb(sessionId)
+      
+      // Remove from cache
+      set((state) => {
+        const newMap = new Map(state.pomodoroSessionsMap)
+        const existing = newMap.get(entryId) || []
+        newMap.set(entryId, existing.filter(s => s.id !== sessionId))
+        return { pomodoroSessionsMap: newMap }
+      })
+      
+      // Decrement pomodoro count on the parent entry
+      await get().decrementEntryPomodoros(entryId)
+    } catch (error) {
+      console.error('Failed to delete pomodoro session:', error)
+      set({ error: 'Failed to delete pomodoro session' })
+      throw error
+    }
   },
   
   startTimer: (activity, workArea, workType) => set({

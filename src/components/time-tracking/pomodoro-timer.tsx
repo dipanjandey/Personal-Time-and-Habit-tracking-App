@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useCallback, useRef } from 'react'
-import { Play, Pause, RotateCcw, Square, Clock, Link } from 'lucide-react'
+import { Play, Pause, RotateCcw, Square, Clock, Link, Settings2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { useConfigStore } from '@/store/config-store'
 import { useTimeTrackingStore } from '@/store/time-tracking-store'
 import { usePomodoroStore, type TimerMode } from '@/store/pomodoro-store'
@@ -63,6 +65,7 @@ export function PomodoroTimer({ selectedOngoingTask }: PomodoroTimerProps) {
     setComments,
     setLinkedTaskId,
     setTimerVisible,
+    updateConfig,
     incrementCompletedPomodoros,
     getInitialTime,
   } = usePomodoroStore()
@@ -71,7 +74,6 @@ export function PomodoroTimer({ selectedOngoingTask }: PomodoroTimerProps) {
   const { entries, addEntry, addPomodoroSession, incrementEntryPomodoros } = useTimeTrackingStore()
   
   const audioRef = useRef<HTMLAudioElement | null>(null)
-  const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
   // Get today's entries (includes both full pomodoros and partial sessions)
   const todaysPomodoroEntries = entries.filter(
@@ -97,23 +99,8 @@ export function PomodoroTimer({ selectedOngoingTask }: PomodoroTimerProps) {
     audioRef.current = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2teleQMWaJu5t4uNOz4xf6baxNJrIS0wapW3t7ShdlM2Pmp5n7K0q5ZfNzNBYHKLl5iMbkkzMD5aboGLi4N0XEQ4OkpbbH6FhX5xYU9CR09cbXmAgoB5bGBVSk5WYm1zeHl4dG5oYltYWl9kaGxub29ta2hmZGNiY2VnaWpqa2ppaGdmZWRjY2NjY2NjY2NjY2JiYWFgYF9fX19eXl5eXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1d')
   }, [])
 
-  // Timer countdown logic - only runs on this page
-  useEffect(() => {
-    if (isRunning && timeLeft > 0) {
-      intervalRef.current = setInterval(() => {
-        const completed = tick()
-        if (completed) {
-          handleTimerComplete()
-        }
-      }, 1000)
-    }
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current)
-      }
-    }
-  }, [isRunning, timeLeft])
+  // Ref for handleTimerComplete – initialized after declaration below
+  const handleTimerCompleteRef = useRef<(() => void) | null>(null)
 
   // Save completed pomodoro to time entries or as a pomodoro session
   const saveCompletedPomodoro = useCallback(async (actualDurationMinutes?: number) => {
@@ -124,10 +111,10 @@ export function PomodoroTimer({ selectedOngoingTask }: PomodoroTimerProps) {
     const startTime = new Date(now.getTime() - durationMinutes * 60 * 1000)
     const isFullPomodoro = actualDurationMinutes === undefined
     
-    // Don't save if duration is less than 1 minute
-    if (durationMinutes < 1) {
+    // Don't save if duration is negligible (under 3 seconds)
+    if (durationMinutes < 0.05) {
       toast.info('Session too short', {
-        description: 'Sessions under 1 minute are not saved.',
+        description: 'Sessions under a few seconds are not saved.',
       })
       return
     }
@@ -144,7 +131,7 @@ export function PomodoroTimer({ selectedOngoingTask }: PomodoroTimerProps) {
           timeEntryId: selectedOngoingTask.id,
           startTime: formatDateTimeISO(startTime),
           endTime: formatDateTimeISO(now),
-          duration: Math.round(durationMinutes),
+          duration: Math.max(1, Math.round(durationMinutes)),
           comments: comments || null,
           isFullPomodoro,
         })
@@ -155,7 +142,7 @@ export function PomodoroTimer({ selectedOngoingTask }: PomodoroTimerProps) {
         }
         
         toast.success(isFullPomodoro ? 'Pomodoro added to task!' : 'Partial session saved!', {
-          description: `${Math.round(durationMinutes)} min added to ${selectedOngoingTask.workArea}`,
+          description: `${Math.max(1, Math.round(durationMinutes))} min added to ${selectedOngoingTask.workArea}`,
         })
       } else {
         // Create independent time entry (original behavior)
@@ -167,7 +154,7 @@ export function PomodoroTimer({ selectedOngoingTask }: PomodoroTimerProps) {
           pomodoros: isFullPomodoro ? 1 : 0,
           comments: comments,
           date: getTodayISO(),
-          duration: Math.round(durationMinutes),
+          duration: Math.max(1, Math.round(durationMinutes)),
           userId: '', // Will be set by the store/supabase
         })
         
@@ -209,6 +196,30 @@ export function PomodoroTimer({ selectedOngoingTask }: PomodoroTimerProps) {
       setMode('pomodoro')
     }
   }, [mode, completedPomodoros, config, saveCompletedPomodoro, incrementCompletedPomodoros, setMode])
+
+  // Keep ref in sync so the completion effect always calls the latest version
+  useEffect(() => {
+    handleTimerCompleteRef.current = handleTimerComplete
+  })
+
+  // Timer countdown – only ticks, does NOT handle completion
+  useEffect(() => {
+    if (isRunning && timeLeft > 0) {
+      const timerId = setTimeout(() => tick(), 1000)
+      return () => clearTimeout(timerId)
+    }
+  }, [isRunning, timeLeft, tick])
+
+  // Detect timer completion via state change
+  // (React 18 + useSyncExternalStore can interrupt interval callbacks,
+  //  so we detect completion through a reactive effect instead.)
+  const prevTimeLeftRef = useRef(timeLeft)
+  useEffect(() => {
+    if (prevTimeLeftRef.current > 0 && timeLeft === 0 && !isRunning) {
+      handleTimerCompleteRef.current?.()
+    }
+    prevTimeLeftRef.current = timeLeft
+  }, [timeLeft, isRunning])
 
   const handleStart = () => {
     if (!isFormValid) {
@@ -281,6 +292,89 @@ export function PomodoroTimer({ selectedOngoingTask }: PomodoroTimerProps) {
         </div>
 
         <div className="p-6 md:p-8">
+          {/* Settings button - top right */}
+          <div className="flex justify-end mb-2 -mt-1">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                  disabled={isRunning}
+                  title="Timer settings"
+                >
+                  <Settings2 className="w-4 h-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-72" align="end">
+                <div className="space-y-4">
+                  <h4 className="font-medium text-sm">Timer Settings</h4>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between gap-4">
+                      <Label className="text-sm text-muted-foreground whitespace-nowrap">Pomodoro</Label>
+                      <div className="flex items-center gap-1.5">
+                        <Input
+                          type="number"
+                          min={0.1}
+                          max={120}
+                          step={0.1}
+                          value={config.pomodoro}
+                          onChange={(e) => updateConfig({ pomodoro: Math.max(0.1, Math.min(120, Number(e.target.value) || 0.1)) })}
+                          className="w-16 h-8 text-center text-sm"
+                        />
+                        <span className="text-xs text-muted-foreground">min</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between gap-4">
+                      <Label className="text-sm text-muted-foreground whitespace-nowrap">Short Break</Label>
+                      <div className="flex items-center gap-1.5">
+                        <Input
+                          type="number"
+                          min={0.1}
+                          max={60}
+                          step={0.1}
+                          value={config.shortBreak}
+                          onChange={(e) => updateConfig({ shortBreak: Math.max(0.1, Math.min(60, Number(e.target.value) || 0.1)) })}
+                          className="w-16 h-8 text-center text-sm"
+                        />
+                        <span className="text-xs text-muted-foreground">min</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between gap-4">
+                      <Label className="text-sm text-muted-foreground whitespace-nowrap">Long Break</Label>
+                      <div className="flex items-center gap-1.5">
+                        <Input
+                          type="number"
+                          min={0.1}
+                          max={60}
+                          step={0.1}
+                          value={config.longBreak}
+                          onChange={(e) => updateConfig({ longBreak: Math.max(0.1, Math.min(60, Number(e.target.value) || 0.1)) })}
+                          className="w-16 h-8 text-center text-sm"
+                        />
+                        <span className="text-xs text-muted-foreground">min</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between gap-4">
+                      <Label className="text-sm text-muted-foreground whitespace-nowrap">Long Break After</Label>
+                      <div className="flex items-center gap-1.5">
+                        <Input
+                          type="number"
+                          min={1}
+                          max={12}
+                          value={config.longBreakInterval}
+                          onChange={(e) => updateConfig({ longBreakInterval: Math.max(1, Math.min(12, Number(e.target.value) || 1)) })}
+                          className="w-16 h-8 text-center text-sm"
+                        />
+                        <span className="text-xs text-muted-foreground">🍅</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+
           {/* Mode Tabs */}
           <Tabs value={mode} onValueChange={handleModeChange} className="mb-6">
             <TabsList className="w-full grid grid-cols-3 h-12 bg-muted/50">
