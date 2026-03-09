@@ -42,7 +42,7 @@ export default function TrackTimePage() {
   return (
     <div className="p-4 md:p-6 lg:p-8 overflow-x-hidden">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 md:mb-8 pb-4 border-b">
-        <h1 className="text-3xl font-bold">Track Time</h1>
+        <h1 className="text-3xl font-bold">Time Tracking</h1>
         <div className="flex gap-3">
           <Button variant="outline" onClick={() => setBulkUploadOpen(true)}>
             <Upload className="w-4 h-4 mr-2" />
@@ -63,7 +63,7 @@ export default function TrackTimePage() {
             <span className="hidden sm:inline">Add Entry</span>
             <span className="sm:hidden">Add</span>
           </TabsTrigger>
-          <TabsTrigger value="pomodoro" className="gap-2 px-4">
+          <TabsTrigger value="pomodoro" className="gap-2 px-4 text-[#95ACA6]">
             <Timer className="w-4 h-4" />
             Pomodoro
           </TabsTrigger>

@@ -23,6 +23,7 @@ interface TimeTrackingStore {
   searchQuery: string
   selectedWorkArea: string
   selectedWorkType: string
+  selectedPriority: string
   isSearchOpen: boolean
   isLoading: boolean
   error: string | null
@@ -62,6 +63,7 @@ interface TimeTrackingStore {
   setSearchQuery: (query: string) => void
   setSelectedWorkArea: (area: string) => void
   setSelectedWorkType: (type: string) => void
+  setSelectedPriority: (priority: string) => void
   toggleSearch: () => void
   clearFilters: () => void
 }
@@ -80,6 +82,7 @@ export const useTimeTrackingStore = create<TimeTrackingStore>((set, get) => ({
   searchQuery: '',
   selectedWorkArea: '',
   selectedWorkType: '',
+  selectedPriority: '',
   isSearchOpen: false,
   isLoading: false,
   error: null,
@@ -357,10 +360,12 @@ export const useTimeTrackingStore = create<TimeTrackingStore>((set, get) => ({
   setSearchQuery: (query) => set({ searchQuery: query }),
   setSelectedWorkArea: (area) => set({ selectedWorkArea: area }),
   setSelectedWorkType: (type) => set({ selectedWorkType: type }),
+  setSelectedPriority: (priority) => set({ selectedPriority: priority }),
   toggleSearch: () => set((state) => ({ isSearchOpen: !state.isSearchOpen })),
   clearFilters: () => set({
     searchQuery: '',
     selectedWorkArea: '',
     selectedWorkType: '',
+    selectedPriority: '',
   }),
 }))

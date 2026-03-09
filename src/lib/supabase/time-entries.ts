@@ -1,5 +1,5 @@
 import { supabase } from './client'
-import type { TimeEntry } from '@/types/time-tracking'
+import type { TimeEntry, Priority } from '@/types/time-tracking'
 import type { Database } from '@/types/database.types'
 
 type TimeEntryRow = Database['public']['Tables']['time_entries']['Row']
@@ -15,6 +15,7 @@ function rowToTimeEntry(row: TimeEntryRow): TimeEntry {
     endTime: row.end_time, // Can be null for ongoing tasks
     workArea: row.work_area,
     workType: row.work_type,
+    priority: (row.priority as Priority) ?? null,
     pomodoros: row.pomodoros,
     comments: row.comments,
     date: row.date,
@@ -30,6 +31,7 @@ function timeEntryToInsert(entry: Omit<TimeEntry, 'id'>, userId: string): TimeEn
     end_time: entry.endTime,
     work_area: entry.workArea,
     work_type: entry.workType,
+    priority: entry.priority ?? null,
     pomodoros: entry.pomodoros,
     comments: entry.comments,
     date: entry.date,
@@ -45,6 +47,7 @@ function timeEntryToUpdate(updates: Partial<TimeEntry>): TimeEntryUpdate {
   if (updates.endTime !== undefined) dbUpdates.end_time = updates.endTime
   if (updates.workArea !== undefined) dbUpdates.work_area = updates.workArea
   if (updates.workType !== undefined) dbUpdates.work_type = updates.workType
+  if (updates.priority !== undefined) dbUpdates.priority = updates.priority
   if (updates.pomodoros !== undefined) dbUpdates.pomodoros = updates.pomodoros
   if (updates.comments !== undefined) dbUpdates.comments = updates.comments
   if (updates.date !== undefined) dbUpdates.date = updates.date

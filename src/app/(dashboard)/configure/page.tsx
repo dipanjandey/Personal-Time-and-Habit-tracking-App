@@ -4,6 +4,9 @@ import { useEffect } from 'react'
 import { EditableList } from '@/components/config/editable-list'
 import { useConfigStore } from '@/store/config-store'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { PRIORITY_OPTIONS } from '@/types/time-tracking'
 
 export default function ConfigurePage() {
   const {
@@ -71,6 +74,47 @@ export default function ConfigurePage() {
           onDelete={removeWorkType}
           onReorder={reorderWorkTypesList}
         />
+      </div>
+
+      <div className="mt-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Priority Levels</CardTitle>
+            <CardDescription>
+              Fixed priority categories based on the Eisenhower Matrix. These cannot be edited.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {PRIORITY_OPTIONS.map((priority) => {
+                const isStrategic = priority.startsWith('Strategic')
+                const isUrgent = priority.includes('Urgent') && !priority.includes('Not')
+                return (
+                  <div
+                    key={priority}
+                    className="flex items-center gap-3 p-3 rounded-lg border bg-muted/30"
+                  >
+                    <div className={`w-3 h-3 rounded-full flex-shrink-0 ${
+                      isStrategic && isUrgent ? 'bg-red-500' :
+                      isStrategic && !isUrgent ? 'bg-blue-500' :
+                      !isStrategic && isUrgent ? 'bg-amber-500' :
+                      'bg-green-500'
+                    }`} />
+                    <span className="text-sm font-medium">{priority}</span>
+                    <div className="ml-auto flex gap-1.5">
+                      <Badge variant="outline" className="text-xs">
+                        {isStrategic ? 'Strategic' : 'Tactical'}
+                      </Badge>
+                      <Badge variant={isUrgent ? 'destructive' : 'secondary'} className="text-xs">
+                        {isUrgent ? 'Urgent' : 'Not Urgent'}
+                      </Badge>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )

@@ -86,7 +86,7 @@ export default function AnalyticsPage() {
     period === 'custom' ? customDateRange : undefined
   )
 
-  const { stats, workAreaBreakdown, workTypeBreakdown, dailyTrends, insights, trendComparison } = analyticsData
+  const { stats, workAreaBreakdown, workTypeBreakdown, priorityBreakdown, dailyTrends, insights, trendComparison } = analyticsData
 
   // Prepare pie chart data with legend
   const maxVisibleAreas = 5
@@ -368,6 +368,74 @@ export default function AnalyticsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Priority Distribution - Bar Chart */}
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle>Time by Priority</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {priorityBreakdown.length > 0 && priorityBreakdown.some(d => d.duration > 0) ? (
+            <ChartContainer
+              config={priorityBreakdown.reduce((acc, item, index) => {
+                acc[item.name] = {
+                  label: item.name,
+                  color: CHART_COLORS[index % CHART_COLORS.length],
+                }
+                return acc
+              }, {} as Record<string, { label: string; color: string }>)}
+              className="h-[250px] w-full"
+            >
+              <RechartsBarChart data={priorityBreakdown} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                <XAxis
+                  type="number"
+                  tickFormatter={formatYAxisDuration}
+                  tick={{ fontSize: 12 }}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <YAxis
+                  type="category"
+                  dataKey="name"
+                  tick={{ fontSize: 12 }}
+                  tickLine={false}
+                  axisLine={false}
+                  width={160}
+                />
+                <ChartTooltip
+                  content={
+                    <ChartTooltipContent
+                      formatter={(value) => formatDuration(value as number)}
+                    />
+                  }
+                />
+                <Bar dataKey="duration" radius={[0, 8, 8, 0]}>
+                  {priorityBreakdown.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={CHART_COLORS[index % CHART_COLORS.length]}
+                    />
+                  ))}
+                  <LabelList
+                    dataKey="duration"
+                    position="right"
+                    formatter={(value: number) => formatYAxisDuration(value)}
+                    className="fill-foreground text-xs"
+                  />
+                </Bar>
+              </RechartsBarChart>
+            </ChartContainer>
+          ) : (
+            <div className="h-[250px] flex items-center justify-center text-muted-foreground">
+              <div className="text-center">
+                <p>No data available for this period</p>
+                <p className="text-sm mt-1">Start tracking time with priorities to see the breakdown</p>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Daily Productivity Trend - Now a Bar Chart */}
       <Card className="mb-8">

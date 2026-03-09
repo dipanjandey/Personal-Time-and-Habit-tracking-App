@@ -8,6 +8,7 @@ export interface ParsedEntry {
   endTime: string
   workArea: string
   workType: string
+  priority: string
   pomodoros: number
   comments: string
   isValid: boolean
@@ -21,6 +22,7 @@ interface ExcelRow {
   endTime?: string | number
   workArea?: string
   workType?: string
+  priority?: string
   pomodoros?: number | string
   comments?: string
 }
@@ -36,6 +38,7 @@ export function downloadTemplate(): void {
     'endTime',
     'workArea',
     'workType',
+    'priority',
     'pomodoros',
     'comments',
   ]
@@ -48,6 +51,7 @@ export function downloadTemplate(): void {
       endTime: '10:30',
       workArea: 'Development',
       workType: 'Deep Work',
+      priority: 'Strategic - Urgent',
       pomodoros: 3,
       comments: 'Worked on feature implementation',
     },
@@ -57,6 +61,7 @@ export function downloadTemplate(): void {
       endTime: '15:00',
       workArea: 'Meetings',
       workType: 'Collaboration',
+      priority: 'Tactical - Not Urgent',
       pomodoros: 2,
       comments: 'Team sync meeting',
     },
@@ -72,6 +77,7 @@ export function downloadTemplate(): void {
     { wch: 10 }, // endTime
     { wch: 15 }, // workArea
     { wch: 15 }, // workType
+    { wch: 25 }, // priority
     { wch: 10 }, // pomodoros
     { wch: 40 }, // comments
   ]
@@ -209,10 +215,22 @@ export async function parseExcelFile(
           const endTime = parseTimeValue(row.endTime)
           const workArea = String(row.workArea || '').trim()
           const workType = String(row.workType || '').trim()
+          const priority = String(row.priority || '').trim()
           const pomodoros = typeof row.pomodoros === 'number' 
             ? row.pomodoros 
             : parseInt(String(row.pomodoros || '0'), 10)
           const comments = String(row.comments || '').trim()
+
+          // Validate priority (optional field)
+          const validPriorities = [
+            'Strategic - Urgent',
+            'Strategic - Not Urgent',
+            'Tactical - Urgent',
+            'Tactical - Not Urgent',
+          ]
+          if (priority && !validPriorities.includes(priority)) {
+            errors.push(`Invalid priority. Valid options: ${validPriorities.join(', ')}`)
+          }
 
           // Validate date
           if (!date) {
@@ -275,6 +293,7 @@ export async function parseExcelFile(
             endTime,
             workArea,
             workType,
+            priority,
             pomodoros: isNaN(pomodoros) ? 0 : pomodoros,
             comments,
             isValid: errors.length === 0,

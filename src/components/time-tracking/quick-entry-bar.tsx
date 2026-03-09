@@ -8,9 +8,11 @@ import { InputGroup, InputGroupInput, InputGroupButton } from '@/components/ui/i
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Combobox } from '@/components/ui/combobox'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useTimeTrackingStore } from '@/store/time-tracking-store'
 import { useConfigStore } from '@/store/config-store'
 import { calculateDuration, getCurrentTime, getTodayDate } from '@/lib/time-utils'
+import { PRIORITY_OPTIONS, type Priority } from '@/types/time-tracking'
 
 // Helper functions for date/time formatting and validation
 const formatDateTimeForEdit = (date: string, time: string): string => {
@@ -99,6 +101,7 @@ export function QuickEntryBar() {
   const [endError, setEndError] = useState('')
   const [workArea, setWorkArea] = useState('')
   const [workType, setWorkType] = useState('')
+  const [priority, setPriority] = useState<Priority | null>(null)
   const [pomodoros, setPomodoros] = useState(0)
   const [comments, setComments] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -183,6 +186,7 @@ export function QuickEntryBar() {
         endTime: endTimeValue,
         workArea,
         workType,
+        priority,
         pomodoros,
         comments,
         date: startParsed.date,
@@ -195,6 +199,7 @@ export function QuickEntryBar() {
       setEndDateTime('')
       setStartError('')
       setEndError('')
+      setPriority(null)
       setPomodoros(0)
       setComments('')
     } catch (error) {
@@ -312,6 +317,26 @@ export function QuickEntryBar() {
             emptyText="No type found."
             required
           />
+        </div>
+
+        <div className="space-y-1 col-span-2 sm:col-span-2">
+          <Label htmlFor="priority" className="text-[10px] md:text-xs font-bold uppercase text-primary-foreground/90 text-center block">
+            Priority
+          </Label>
+          <Select
+            value={priority ?? '__none__'}
+            onValueChange={(val) => setPriority(val === '__none__' ? null : val as Priority)}
+          >
+            <SelectTrigger id="priority" className="bg-background text-foreground h-8 md:h-9 text-xs md:text-sm">
+              <SelectValue placeholder="Select priority..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">No priority</SelectItem>
+              {PRIORITY_OPTIONS.map((opt) => (
+                <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="space-y-1">

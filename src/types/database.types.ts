@@ -125,6 +125,7 @@ export interface Database {
           end_time: string | null
           work_area: string
           work_type: string
+          priority: string | null
           pomodoros: number
           comments: string
           date: string
@@ -139,6 +140,7 @@ export interface Database {
           end_time?: string | null
           work_area: string
           work_type: string
+          priority?: string | null
           pomodoros?: number
           comments?: string
           date: string
@@ -153,6 +155,7 @@ export interface Database {
           end_time?: string | null
           work_area?: string
           work_type?: string
+          priority?: string | null
           pomodoros?: number
           comments?: string
           date?: string

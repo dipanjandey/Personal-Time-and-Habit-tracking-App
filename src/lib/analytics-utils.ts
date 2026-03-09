@@ -46,10 +46,18 @@ export interface TrendComparison {
   totalPomodorosChange: number // percentage change
 }
 
+export interface PriorityStats {
+  name: string
+  duration: number // in minutes
+  percentage: number
+  count: number
+}
+
 export interface AnalyticsData {
   stats: TimeStats
   workAreaBreakdown: WorkAreaStats[]
   workTypeBreakdown: WorkTypeStats[]
+  priorityBreakdown: PriorityStats[]
   dailyTrends: DailyTrend[]
   insights: Insight[]
   trendComparison: TrendComparison
@@ -182,6 +190,36 @@ export function calculateWorkTypeBreakdown(entries: TimeEntry[]): WorkTypeStats[
 }
 
 /**
+ * Calculate priority breakdown
+ */
+export function calculatePriorityBreakdown(entries: TimeEntry[]): PriorityStats[] {
+  const totalDuration = entries.reduce((sum, entry) => sum + entry.duration, 0)
+
+  // Group by priority
+  const grouped = entries.reduce<Record<string, { duration: number; count: number }>>((acc, entry) => {
+    const key = entry.priority || 'Unset'
+    if (!acc[key]) {
+      acc[key] = { duration: 0, count: 0 }
+    }
+    acc[key].duration += entry.duration
+    acc[key].count += 1
+    return acc
+  }, {})
+
+  // Convert to array and calculate percentages
+  const breakdown = Object.entries(grouped)
+    .map(([name, data]) => ({
+      name,
+      duration: data.duration,
+      count: data.count,
+      percentage: totalDuration > 0 ? (data.duration / totalDuration) * 100 : 0,
+    }))
+    .sort((a, b) => b.duration - a.duration)
+
+  return breakdown
+}
+
+/**
  * Calculate daily trends
  */
 export function calculateDailyTrends(
@@ -304,6 +342,7 @@ export function computeAnalyticsData(
   const stats = calculateStats(filteredEntries)
   const workAreaBreakdown = calculateWorkAreaBreakdown(filteredEntries)
   const workTypeBreakdown = calculateWorkTypeBreakdown(filteredEntries)
+  const priorityBreakdown = calculatePriorityBreakdown(filteredEntries)
   const dailyTrends = calculateDailyTrends(filteredEntries, dateRange)
 
   // Calculate previous period for comparison
@@ -319,6 +358,7 @@ export function computeAnalyticsData(
     stats,
     workAreaBreakdown,
     workTypeBreakdown,
+    priorityBreakdown,
     dailyTrends,
     insights,
     trendComparison,

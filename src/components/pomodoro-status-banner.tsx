@@ -14,11 +14,19 @@ export function PomodoroStatusBanner() {
     mode, 
     selectedArea,
     isTimerVisible,
+    config,
     pause, 
     resume,
     tick,
+    syncTimeLeft,
+    getInitialTime,
   } = usePomodoroStore()
   
+  // Sync timer from wall clock on mount (catches up after navigating away)
+  useEffect(() => {
+    syncTimeLeft()
+  }, [syncTimeLeft])
+
   // Global timer interval - runs regardless of which page we're on
   useEffect(() => {
     if (!isRunning) return
@@ -30,11 +38,11 @@ export function PomodoroStatusBanner() {
     return () => clearInterval(interval)
   }, [isRunning, tick])
   
-  // Don't show banner if the timer component is visible (user can see the full timer)
-  // Also don't show if timer is not running and has full time left
-  const initialTime = mode === 'pomodoro' ? 25 * 60 : mode === 'shortBreak' ? 5 * 60 : 15 * 60
+  // Use config-based initial time (not hardcoded defaults)
+  const initialTime = getInitialTime(mode)
   const isTimerActive = isRunning || timeLeft < initialTime
   
+  // Don't show banner if the timer component is visible (user can see the full timer)
   if (isTimerVisible || !isTimerActive) {
     return null
   }

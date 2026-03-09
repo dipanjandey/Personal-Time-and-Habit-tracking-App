@@ -113,9 +113,12 @@ export function OngoingTaskCard({
         </div>
         
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Badge variant="secondary" className="text-xs">{task.workArea}</Badge>
             <Badge variant="outline" className="text-xs">{task.workType}</Badge>
+            {task.priority && (
+              <Badge variant="outline" className="text-xs text-amber-700 border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400">{task.priority}</Badge>
+            )}
           </div>
           {task.comments && (
             <p className="text-xs text-muted-foreground truncate mt-1">{task.comments}</p>
@@ -159,6 +162,9 @@ export function OngoingTaskCard({
           <div className="flex flex-wrap items-center gap-2 mb-2">
             <Badge variant="secondary">{task.workArea}</Badge>
             <Badge variant="outline">{task.workType}</Badge>
+            {task.priority && (
+              <Badge variant="outline" className="text-amber-700 border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400">{task.priority}</Badge>
+            )}
             {task.pomodoros > 0 && (
               <Badge variant="default">🍅 {task.pomodoros}</Badge>
             )}

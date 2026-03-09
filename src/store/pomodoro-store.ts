@@ -24,7 +24,8 @@ interface PomodoroStore {
   mode: TimerMode
   timeLeft: number
   isRunning: boolean
-  startedAt: number | null // timestamp when timer was started/resumed
+  startedAt: number | null // wall-clock timestamp when timer was started/resumed
+  timeLeftAtStart: number | null // snapshot of timeLeft at the moment startedAt was set
   pausedTimeLeft: number | null // time left when paused (for accurate restoration)
   
   // Form state
@@ -59,6 +60,7 @@ interface PomodoroStore {
   incrementCompletedPomodoros: () => void
   getInitialTime: (mode: TimerMode) => number
   getElapsedMinutes: () => number
+  syncTimeLeft: () => void
 }
 
 export const usePomodoroStore = create<PomodoroStore>()(
@@ -69,6 +71,7 @@ export const usePomodoroStore = create<PomodoroStore>()(
       timeLeft: DEFAULT_CONFIG.pomodoro * 60,
       isRunning: false,
       startedAt: null,
+      timeLeftAtStart: null,
       pausedTimeLeft: null,
       
       selectedArea: '',
@@ -82,9 +85,11 @@ export const usePomodoroStore = create<PomodoroStore>()(
       
       // Actions
       start: (area, type, linkedTaskId) => {
+        const { timeLeft } = get()
         set((state) => ({
           isRunning: true,
           startedAt: Date.now(),
+          timeLeftAtStart: state.timeLeft,
           pausedTimeLeft: null,
           ...(area !== undefined && { selectedArea: area }),
           ...(type !== undefined && { selectedType: type }),
@@ -93,17 +98,22 @@ export const usePomodoroStore = create<PomodoroStore>()(
       },
       
       pause: () => {
+        // Sync first so timeLeft is accurate before pausing
+        get().syncTimeLeft()
         set((state) => ({
           isRunning: false,
           pausedTimeLeft: state.timeLeft,
           startedAt: null,
+          timeLeftAtStart: null,
         }))
       },
       
       resume: () => {
+        const { timeLeft } = get()
         set({
           isRunning: true,
           startedAt: Date.now(),
+          timeLeftAtStart: timeLeft,
           pausedTimeLeft: null,
         })
       },
@@ -119,31 +129,34 @@ export const usePomodoroStore = create<PomodoroStore>()(
         set({
           isRunning: false,
           startedAt: null,
+          timeLeftAtStart: null,
           pausedTimeLeft: null,
           timeLeft: initialTime,
         })
       },
       
       stop: () => {
-        const { isRunning, startedAt, timeLeft, mode, config, pausedTimeLeft } = get()
+        // Sync first so timeLeft is accurate
+        get().syncTimeLeft()
+        const { isRunning, startedAt, timeLeft, mode, config, pausedTimeLeft, timeLeftAtStart } = get()
         
         let elapsedMinutes = 0
         
-        if (isRunning && startedAt) {
-          // Timer was running - calculate from startedAt
-          const elapsedMs = Date.now() - startedAt
-          const elapsedSeconds = elapsedMs / 1000
+        if (isRunning && startedAt && timeLeftAtStart !== null) {
+          // Timer was running - calculate total elapsed from wall clock
+          const elapsedSeconds = (Date.now() - startedAt) / 1000
+          const totalUsedSeconds = timeLeftAtStart - Math.max(0, timeLeftAtStart - elapsedSeconds)
+          
           const initialTime = mode === 'pomodoro' 
             ? config.pomodoro * 60 
             : mode === 'shortBreak' 
               ? config.shortBreak * 60 
               : config.longBreak * 60
-          
-          // Total elapsed = time already used before this run + time used in this run
+
           const timeUsedBefore = pausedTimeLeft !== null 
             ? initialTime - pausedTimeLeft 
-            : initialTime - timeLeft
-          elapsedMinutes = (timeUsedBefore + elapsedSeconds) / 60
+            : initialTime - timeLeftAtStart
+          elapsedMinutes = (timeUsedBefore + totalUsedSeconds) / 60
         } else {
           // Timer was paused
           const initialTime = mode === 'pomodoro' 
@@ -164,6 +177,7 @@ export const usePomodoroStore = create<PomodoroStore>()(
         set({
           isRunning: false,
           startedAt: null,
+          timeLeftAtStart: null,
           pausedTimeLeft: null,
           mode: nextMode,
           timeLeft: nextTimeLeft,
@@ -172,22 +186,54 @@ export const usePomodoroStore = create<PomodoroStore>()(
         return { wasRunning: isRunning, elapsedMinutes }
       },
       
+      // Sync timeLeft from wall clock. Call this on mount / before reading timeLeft.
+      syncTimeLeft: () => {
+        const { isRunning, startedAt, timeLeftAtStart } = get()
+        if (!isRunning || !startedAt || timeLeftAtStart === null) return
+        
+        const elapsedSeconds = Math.floor((Date.now() - startedAt) / 1000)
+        const newTimeLeft = Math.max(0, timeLeftAtStart - elapsedSeconds)
+        
+        const { timeLeft } = get()
+        if (newTimeLeft !== timeLeft) {
+          if (newTimeLeft <= 0) {
+            set({ timeLeft: 0, isRunning: false, startedAt: null, timeLeftAtStart: null, pausedTimeLeft: null })
+          } else {
+            set({ timeLeft: newTimeLeft })
+          }
+        }
+      },
+      
       tick: () => {
-        const { isRunning, timeLeft } = get()
+        // Instead of blindly decrementing by 1, sync from wall clock
+        const { isRunning, startedAt, timeLeftAtStart } = get()
         
         if (!isRunning) return false
         
+        if (startedAt && timeLeftAtStart !== null) {
+          // Wall-clock-based tick
+          const elapsedSeconds = Math.floor((Date.now() - startedAt) / 1000)
+          const newTimeLeft = Math.max(0, timeLeftAtStart - elapsedSeconds)
+          
+          if (newTimeLeft <= 0) {
+            set({ timeLeft: 0, isRunning: false, startedAt: null, timeLeftAtStart: null, pausedTimeLeft: null })
+            return true
+          }
+          
+          set({ timeLeft: newTimeLeft })
+          return false
+        }
+        
+        // Fallback: simple decrement (should not normally be reached)
+        const { timeLeft } = get()
         if (timeLeft <= 0) {
-          // Timer already at 0, mark completed
-          set({ isRunning: false, startedAt: null, pausedTimeLeft: null })
+          set({ isRunning: false, startedAt: null, timeLeftAtStart: null, pausedTimeLeft: null })
           return true
         }
         
         const newTimeLeft = timeLeft - 1
-        
         if (newTimeLeft <= 0) {
-          // Timer just reached 0, mark completed immediately
-          set({ timeLeft: 0, isRunning: false, startedAt: null, pausedTimeLeft: null })
+          set({ timeLeft: 0, isRunning: false, startedAt: null, timeLeftAtStart: null, pausedTimeLeft: null })
           return true
         }
         
@@ -209,6 +255,7 @@ export const usePomodoroStore = create<PomodoroStore>()(
           mode,
           timeLeft: initialTime,
           startedAt: null,
+          timeLeftAtStart: null,
           pausedTimeLeft: null,
         })
       },
@@ -252,19 +299,18 @@ export const usePomodoroStore = create<PomodoroStore>()(
       },
       
       getElapsedMinutes: () => {
-        const { isRunning, startedAt, timeLeft, mode, config, pausedTimeLeft } = get()
+        const { isRunning, startedAt, timeLeft, mode, config, pausedTimeLeft, timeLeftAtStart } = get()
         const initialTime = mode === 'pomodoro' 
           ? config.pomodoro * 60 
           : mode === 'shortBreak' 
             ? config.shortBreak * 60 
             : config.longBreak * 60
         
-        if (isRunning && startedAt) {
-          const elapsedMs = Date.now() - startedAt
-          const elapsedSeconds = elapsedMs / 1000
+        if (isRunning && startedAt && timeLeftAtStart !== null) {
+          const elapsedSeconds = (Date.now() - startedAt) / 1000
           const timeUsedBefore = pausedTimeLeft !== null 
             ? initialTime - pausedTimeLeft 
-            : initialTime - timeLeft
+            : initialTime - timeLeftAtStart
           return (timeUsedBefore + elapsedSeconds) / 60
         }
         
@@ -275,19 +321,18 @@ export const usePomodoroStore = create<PomodoroStore>()(
       name: 'pomodoro-storage',
       // Rehydrate running timer on page load
       onRehydrateStorage: () => (state) => {
-        if (state?.isRunning && state?.startedAt) {
+        if (state?.isRunning && state?.startedAt && state?.timeLeftAtStart !== null && state?.timeLeftAtStart !== undefined) {
           // Calculate how much time has passed since the timer was running
           const elapsedSinceStart = Math.floor((Date.now() - state.startedAt) / 1000)
-          const newTimeLeft = state.timeLeft - elapsedSinceStart
+          const newTimeLeft = (state.timeLeftAtStart ?? state.timeLeft) - elapsedSinceStart
           
           if (newTimeLeft > 0) {
-            // Timer still has time - update timeLeft and keep running
             state.timeLeft = newTimeLeft
           } else {
-            // Timer would have completed - set to 0
             state.timeLeft = 0
             state.isRunning = false
             state.startedAt = null
+            state.timeLeftAtStart = null
           }
         }
       },

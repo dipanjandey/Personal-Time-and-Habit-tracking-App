@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useCallback, useRef } from 'react'
-import { Play, Pause, RotateCcw, Square, Clock, Link, Settings2 } from 'lucide-react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { Play, Pause, RotateCcw, Square, Clock, Link, Settings2, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { useConfigStore } from '@/store/config-store'
 import { useTimeTrackingStore } from '@/store/time-tracking-store'
-import { usePomodoroStore, type TimerMode } from '@/store/pomodoro-store'
+import { usePomodoroStore, type TimerMode, type PomodoroConfig } from '@/store/pomodoro-store'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import type { TimeEntry } from '@/types/time-tracking'
@@ -88,6 +88,18 @@ export function PomodoroTimer({ selectedOngoingTask }: PomodoroTimerProps) {
     setLinkedTaskId(selectedOngoingTask?.id ?? null)
   }, [selectedOngoingTask, setLinkedTaskId])
 
+  const syncTimeLeft = usePomodoroStore((s) => s.syncTimeLeft)
+
+  // Sync timer from wall clock on mount (catches up after being on another page)
+  // Also detect if the timer completed while we were away
+  const mountSyncDoneRef = useRef(false)
+  useEffect(() => {
+    syncTimeLeft()
+    // After sync, check if the timer has reached 0 (completed while away)
+    // We set a flag so the completion effect below can detect this on mount
+    mountSyncDoneRef.current = true
+  }, [syncTimeLeft])
+
   // Track timer visibility for the banner
   useEffect(() => {
     setTimerVisible(true)
@@ -151,6 +163,7 @@ export function PomodoroTimer({ selectedOngoingTask }: PomodoroTimerProps) {
           endTime: formatDateTimeISO(now),
           workArea: areaToSave,
           workType: typeToSave,
+          priority: null,
           pomodoros: isFullPomodoro ? 1 : 0,
           comments: comments,
           date: getTodayISO(),
@@ -211,13 +224,25 @@ export function PomodoroTimer({ selectedOngoingTask }: PomodoroTimerProps) {
   }, [isRunning, timeLeft, tick])
 
   // Detect timer completion via state change
-  // (React 18 + useSyncExternalStore can interrupt interval callbacks,
-  //  so we detect completion through a reactive effect instead.)
+  // Triggers when:
+  //  1. tick() brings timeLeft from >0 to 0 (normal completion)
+  //  2. Component mounts and finds timeLeft===0 && !isRunning (completed while away)
   const prevTimeLeftRef = useRef(timeLeft)
+  const hasHandledCompletionRef = useRef(false)
   useEffect(() => {
-    if (prevTimeLeftRef.current > 0 && timeLeft === 0 && !isRunning) {
+    const completedNormally = prevTimeLeftRef.current > 0 && timeLeft === 0 && !isRunning
+    const completedWhileAway = mountSyncDoneRef.current && timeLeft === 0 && !isRunning && !hasHandledCompletionRef.current
+
+    if (completedNormally || completedWhileAway) {
+      hasHandledCompletionRef.current = true
       handleTimerCompleteRef.current?.()
     }
+
+    // Reset the flag when a new timer starts
+    if (isRunning && timeLeft > 0) {
+      hasHandledCompletionRef.current = false
+    }
+
     prevTimeLeftRef.current = timeLeft
   }, [timeLeft, isRunning])
 
@@ -294,85 +319,11 @@ export function PomodoroTimer({ selectedOngoingTask }: PomodoroTimerProps) {
         <div className="p-6 md:p-8">
           {/* Settings button - top right */}
           <div className="flex justify-end mb-2 -mt-1">
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-                  disabled={isRunning}
-                  title="Timer settings"
-                >
-                  <Settings2 className="w-4 h-4" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-72" align="end">
-                <div className="space-y-4">
-                  <h4 className="font-medium text-sm">Timer Settings</h4>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between gap-4">
-                      <Label className="text-sm text-muted-foreground whitespace-nowrap">Pomodoro</Label>
-                      <div className="flex items-center gap-1.5">
-                        <Input
-                          type="number"
-                          min={0.1}
-                          max={120}
-                          step={0.1}
-                          value={config.pomodoro}
-                          onChange={(e) => updateConfig({ pomodoro: Math.max(0.1, Math.min(120, Number(e.target.value) || 0.1)) })}
-                          className="w-16 h-8 text-center text-sm"
-                        />
-                        <span className="text-xs text-muted-foreground">min</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between gap-4">
-                      <Label className="text-sm text-muted-foreground whitespace-nowrap">Short Break</Label>
-                      <div className="flex items-center gap-1.5">
-                        <Input
-                          type="number"
-                          min={0.1}
-                          max={60}
-                          step={0.1}
-                          value={config.shortBreak}
-                          onChange={(e) => updateConfig({ shortBreak: Math.max(0.1, Math.min(60, Number(e.target.value) || 0.1)) })}
-                          className="w-16 h-8 text-center text-sm"
-                        />
-                        <span className="text-xs text-muted-foreground">min</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between gap-4">
-                      <Label className="text-sm text-muted-foreground whitespace-nowrap">Long Break</Label>
-                      <div className="flex items-center gap-1.5">
-                        <Input
-                          type="number"
-                          min={0.1}
-                          max={60}
-                          step={0.1}
-                          value={config.longBreak}
-                          onChange={(e) => updateConfig({ longBreak: Math.max(0.1, Math.min(60, Number(e.target.value) || 0.1)) })}
-                          className="w-16 h-8 text-center text-sm"
-                        />
-                        <span className="text-xs text-muted-foreground">min</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between gap-4">
-                      <Label className="text-sm text-muted-foreground whitespace-nowrap">Long Break After</Label>
-                      <div className="flex items-center gap-1.5">
-                        <Input
-                          type="number"
-                          min={1}
-                          max={12}
-                          value={config.longBreakInterval}
-                          onChange={(e) => updateConfig({ longBreakInterval: Math.max(1, Math.min(12, Number(e.target.value) || 1)) })}
-                          className="w-16 h-8 text-center text-sm"
-                        />
-                        <span className="text-xs text-muted-foreground">🍅</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </PopoverContent>
-            </Popover>
+            <SettingsPopover
+              config={config}
+              isRunning={isRunning}
+              onSave={updateConfig}
+            />
           </div>
 
           {/* Mode Tabs */}
@@ -600,5 +551,121 @@ export function PomodoroTimer({ selectedOngoingTask }: PomodoroTimerProps) {
         </div>
       </CardContent>
     </Card>
+  )
+}
+
+/** Settings popover with local draft state + explicit Save */
+function SettingsPopover({
+  config,
+  isRunning,
+  onSave,
+}: {
+  config: PomodoroConfig
+  isRunning: boolean
+  onSave: (cfg: Partial<PomodoroConfig>) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const [draft, setDraft] = useState(config)
+
+  // Reset draft whenever the popover opens
+  useEffect(() => {
+    if (open) setDraft(config)
+  }, [open, config])
+
+  const handleSave = () => {
+    onSave({
+      pomodoro: Math.max(0.1, Math.min(120, draft.pomodoro || 0.1)),
+      shortBreak: Math.max(0.1, Math.min(60, draft.shortBreak || 0.1)),
+      longBreak: Math.max(0.1, Math.min(60, draft.longBreak || 0.1)),
+      longBreakInterval: Math.max(1, Math.min(12, draft.longBreakInterval || 1)),
+    })
+    setOpen(false)
+    toast.success('Timer settings saved')
+  }
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+          disabled={isRunning}
+          title="Timer settings"
+        >
+          <Settings2 className="w-4 h-4" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-72" align="end">
+        <div className="space-y-4">
+          <h4 className="font-medium text-sm">Timer Settings</h4>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between gap-4">
+              <Label className="text-sm text-muted-foreground whitespace-nowrap">Pomodoro</Label>
+              <div className="flex items-center gap-1.5">
+                <Input
+                  type="number"
+                  min={0.1}
+                  max={120}
+                  step={0.1}
+                  value={draft.pomodoro}
+                  onChange={(e) => setDraft((d) => ({ ...d, pomodoro: Number(e.target.value) }))}
+                  className="w-16 h-8 text-center text-sm"
+                />
+                <span className="text-xs text-muted-foreground">min</span>
+              </div>
+            </div>
+            <div className="flex items-center justify-between gap-4">
+              <Label className="text-sm text-muted-foreground whitespace-nowrap">Short Break</Label>
+              <div className="flex items-center gap-1.5">
+                <Input
+                  type="number"
+                  min={0.1}
+                  max={60}
+                  step={0.1}
+                  value={draft.shortBreak}
+                  onChange={(e) => setDraft((d) => ({ ...d, shortBreak: Number(e.target.value) }))}
+                  className="w-16 h-8 text-center text-sm"
+                />
+                <span className="text-xs text-muted-foreground">min</span>
+              </div>
+            </div>
+            <div className="flex items-center justify-between gap-4">
+              <Label className="text-sm text-muted-foreground whitespace-nowrap">Long Break</Label>
+              <div className="flex items-center gap-1.5">
+                <Input
+                  type="number"
+                  min={0.1}
+                  max={60}
+                  step={0.1}
+                  value={draft.longBreak}
+                  onChange={(e) => setDraft((d) => ({ ...d, longBreak: Number(e.target.value) }))}
+                  className="w-16 h-8 text-center text-sm"
+                />
+                <span className="text-xs text-muted-foreground">min</span>
+              </div>
+            </div>
+            <div className="flex items-center justify-between gap-4">
+              <Label className="text-sm text-muted-foreground whitespace-nowrap">Long Break After</Label>
+              <div className="flex items-center gap-1.5">
+                <Input
+                  type="number"
+                  min={1}
+                  max={12}
+                  value={draft.longBreakInterval}
+                  onChange={(e) => setDraft((d) => ({ ...d, longBreakInterval: Number(e.target.value) }))}
+                  className="w-16 h-8 text-center text-sm"
+                />
+                <span className="text-xs text-muted-foreground">🍅</span>
+              </div>
+            </div>
+          </div>
+          <Button size="sm" className="w-full" onClick={handleSave}>
+            <Check className="w-4 h-4 mr-1.5" />
+            Save
+          </Button>
+        </div>
+      </PopoverContent>
+    </Popover>
   )
 }

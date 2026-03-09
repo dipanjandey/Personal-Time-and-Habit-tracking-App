@@ -144,6 +144,7 @@ export function BulkUploadDialog({ open, onOpenChange }: BulkUploadDialogProps) 
         endTime: entry.endTime,
         workArea: entry.workArea,
         workType: entry.workType,
+        priority: (entry.priority as import('@/types/time-tracking').Priority) || null,
         pomodoros: entry.pomodoros,
         comments: entry.comments,
         duration: entry.duration,

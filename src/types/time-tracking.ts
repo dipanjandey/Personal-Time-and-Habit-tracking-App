@@ -1,9 +1,23 @@
+export type Priority =
+  | 'Strategic - Urgent'
+  | 'Strategic - Not Urgent'
+  | 'Tactical - Urgent'
+  | 'Tactical - Not Urgent'
+
+export const PRIORITY_OPTIONS: Priority[] = [
+  'Strategic - Urgent',
+  'Strategic - Not Urgent',
+  'Tactical - Urgent',
+  'Tactical - Not Urgent',
+]
+
 export interface TimeEntry {
   id: string
   startTime: string // HH:mm format or YYYY-MM-DD HH:mm
   endTime: string | null // HH:mm format or YYYY-MM-DD HH:mm, null for ongoing tasks
   workArea: string
   workType: string
+  priority: Priority | null
   pomodoros: number
   comments: string
   date: string // ISO date

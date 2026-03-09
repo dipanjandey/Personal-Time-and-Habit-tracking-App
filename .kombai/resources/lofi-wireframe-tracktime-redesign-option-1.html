@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Track Time - Reimagined Layout</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Comic Sans MS', 'Segoe UI', sans-serif;
+      background: #f5f5f5;
+      color: #333;
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* ─── Sidebar ─── */
+    .sidebar {
+      width: 220px;
+      background: #fff;
+      border-right: 2px solid #ccc;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+    .sidebar-header {
+      padding: 16px;
+      border-bottom: 2px solid #ccc;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: bold;
+      font-size: 14px;
+    }
+    .sidebar-header .logo {
+      width: 28px; height: 28px;
+      background: #999;
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 12px;
+    }
+    .sidebar-nav { flex: 1; padding: 12px 8px; }
+    .nav-item {
+      padding: 10px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #666;
+      margin-bottom: 2px;
+    }
+    .nav-item.active {
+      background: #e8e8e8;
+      color: #333;
+      font-weight: bold;
+    }
+    .nav-item:hover { background: #f0f0f0; }
+    .nav-icon { width: 16px; height: 16px; background: #999; border-radius: 3px; flex-shrink: 0; }
+    .nav-item.active .nav-icon { background: #666; }
+    .sidebar-footer {
+      padding: 12px 16px;
+      border-top: 2px solid #ccc;
+      font-size: 11px;
+      color: #999;
+    }
+
+    /* ─── Main Content ─── */
+    .main { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+
+    /* ─── Page Header ─── */
+    .page-header {
+      padding: 20px 32px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #ddd;
+      background: #fff;
+    }
+    .page-header h1 { font-size: 22px; color: #333; }
+    .header-actions { display: flex; gap: 8px; }
+
+    /* ─── Buttons ─── */
+    .btn {
+      padding: 8px 14px;
+      border: 2px solid #ccc;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+      background: #fff;
+      font-family: inherit;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-primary { background: #999; color: #fff; border-color: #999; }
+    .btn-sm { padding: 6px 10px; font-size: 11px; }
+
+    /* ─── Content Area ─── */
+    .content { padding: 24px 32px; }
+
+    /* ─── Dashboard Strip ─── */
+    .dashboard-strip {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: #fff;
+      border: 2px solid #ccc;
+      border-radius: 8px;
+      padding: 16px 20px;
+      position: relative;
+    }
+    .stat-card .stat-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #999;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .stat-card .stat-value {
+      font-size: 28px;
+      font-weight: bold;
+      color: #333;
+    }
+    .stat-card .stat-sub {
+      font-size: 11px;
+      color: #999;
+      margin-top: 4px;
+    }
+    .stat-icon { width: 14px; height: 14px; background: #bbb; border-radius: 3px; }
+
+    /* ─── Quick Entry Section ─── */
+    .quick-entry-section {
+      background: #fff;
+      border: 2px solid #ccc;
+      border-radius: 10px;
+      padding: 20px 24px;
+      margin-bottom: 24px;
+      position: relative;
+    }
+    .section-title {
+      font-size: 13px;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section-title .icon { width: 16px; height: 16px; background: #999; border-radius: 3px; }
+
+    .entry-form {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr auto;
+      gap: 12px;
+      align-items: end;
+    }
+    .form-group { display: flex; flex-direction: column; gap: 4px; }
+    .form-group label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #999;
+      font-weight: bold;
+    }
+    .form-group input, .form-group select, .form-group textarea {
+      padding: 8px 10px;
+      border: 2px solid #ccc;
+      border-radius: 6px;
+      font-size: 12px;
+      font-family: inherit;
+      background: #fff;
+    }
+
+    /* ─── Date/Time Picker Row ─── */
+    .datetime-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .datetime-input-group {
+      display: flex;
+      align-items: center;
+      border: 2px solid #ccc;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .datetime-input-group input {
+      flex: 1;
+      border: none;
+      padding: 8px 10px;
+      font-size: 12px;
+      font-family: inherit;
+      outline: none;
+    }
+    .datetime-input-group .picker-btn {
+      padding: 8px 10px;
+      background: #f5f5f5;
+      border: none;
+      border-left: 2px solid #ccc;
+      cursor: pointer;
+      font-size: 11px;
+    }
+
+    /* ─── Two-column layout ─── */
+    .two-col {
+      display: grid;
+      grid-template-columns: 3fr 2fr;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    /* ─── Ongoing Tasks Strip ─── */
+    .ongoing-strip {
+      background: #fff;
+      border: 2px solid #ccc;
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin-bottom: 24px;
+      position: relative;
+    }
+    .ongoing-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .ongoing-header .title {
+      font-size: 12px;
+      font-weight: bold;
+      color: #333;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .pulse-dot {
+      width: 8px; height: 8px;
+      background: #999;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .ongoing-task-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      margin-bottom: 8px;
+    }
+    .ongoing-task-row:last-child { margin-bottom: 0; }
+    .task-badges { display: flex; gap: 6px; flex: 1; }
+    .badge {
+      padding: 3px 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 10px;
+      background: #f5f5f5;
+    }
+    .badge-filled { background: #ddd; border-color: #bbb; }
+    .task-elapsed {
+      font-size: 12px;
+      font-weight: bold;
+      color: #666;
+      white-space: nowrap;
+    }
+
+    /* ─── Recent Entries Table ─── */
+    .entries-section {
+      background: #fff;
+      border: 2px solid #ccc;
+      border-radius: 10px;
+      padding: 20px 24px;
+      position: relative;
+    }
+    .entries-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .entries-header h3 { font-size: 14px; color: #333; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    th {
+      text-align: left;
+      padding: 10px 12px;
+      background: #f5f5f5;
+      color: #666;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      border-bottom: 2px solid #ccc;
+    }
+    th:first-child { border-radius: 6px 0 0 6px; }
+    th:last-child { border-radius: 0 6px 6px 0; }
+    td {
+      padding: 12px;
+      border-bottom: 1px solid #eee;
+      color: #333;
+    }
+    tr:hover td { background: #fafafa; }
+
+    /* ─── Pomodoro Panel ─── */
+    .pomodoro-panel {
+      background: #fff;
+      border: 2px solid #ccc;
+      border-radius: 10px;
+      padding: 20px 24px;
+      position: relative;
+    }
+    .timer-display {
+      text-align: center;
+      padding: 24px 0;
+    }
+    .timer-digits {
+      font-size: 56px;
+      font-weight: bold;
+      color: #333;
+      font-family: 'Courier New', monospace;
+      letter-spacing: 4px;
+    }
+    .timer-mode-tabs {
+      display: flex;
+      gap: 4px;
+      justify-content: center;
+      margin-bottom: 16px;
+    }
+    .mode-tab {
+      padding: 6px 16px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 11px;
+      cursor: pointer;
+      background: #fff;
+      font-family: inherit;
+    }
+    .mode-tab.active { background: #999; color: #fff; border-color: #999; }
+    .timer-progress {
+      height: 4px;
+      background: #eee;
+      border-radius: 2px;
+      margin: 12px 0;
+      overflow: hidden;
+    }
+    .timer-progress-fill {
+      height: 100%;
+      background: #999;
+      width: 35%;
+      border-radius: 2px;
+    }
+    .timer-controls {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 16px;
+    }
+    .timer-btn {
+      padding: 10px 24px;
+      border: 2px solid #ccc;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: bold;
+      cursor: pointer;
+      font-family: inherit;
+      background: #fff;
+    }
+    .timer-btn.primary { background: #999; color: #fff; border-color: #999; padding: 12px 32px; font-size: 15px; }
+
+    /* ─── Reuse / New badges ─── */
+    .reuse-badge {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      background: #4CAF50;
+      color: white;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-family: Arial, sans-serif;
+      font-weight: bold;
+      z-index: 10;
+    }
+    .new-badge {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      background: #FF9800;
+      color: white;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-family: Arial, sans-serif;
+      font-weight: bold;
+      z-index: 10;
+    }
+
+    /* ─── Footer bar ─── */
+    .table-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 12px;
+      margin-top: 12px;
+      border-top: 1px solid #eee;
+      font-size: 11px;
+      color: #999;
+    }
+    .table-footer strong { color: #333; font-size: 14px; }
+
+    /* ─── Comments textarea ─── */
+    .comments-full {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: end;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ════════════════════════════════════════════════ -->
+  <!--  SIDEBAR                                        -->
+  <!-- ════════════════════════════════════════════════ -->
+  <!-- REUSABLE: Sidebar from src/components/ui/sidebar.tsx -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">⏱</div>
+      Habit & Time Tracker
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-item active">
+        <div class="nav-icon"></div>
+        Track Time
+      </div>
+      <div class="nav-item">
+        <div class="nav-icon"></div>
+        History
+      </div>
+      <div class="nav-item">
+        <div class="nav-icon"></div>
+        Configure
+      </div>
+      <div class="nav-item">
+        <div class="nav-icon"></div>
+        Analytics
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      user@email.com<br>
+      <span style="color:#666; cursor:pointer; font-size:10px;">Sign Out</span>
+    </div>
+  </aside>
+
+  <!-- ════════════════════════════════════════════════ -->
+  <!--  MAIN CONTENT                                   -->
+  <!-- ════════════════════════════════════════════════ -->
+  <div class="main">
+
+    <!-- Page Header -->
+    <div class="page-header">
+      <h1>Track Time</h1>
+      <div class="header-actions">
+        <!-- REUSABLE: Button from src/components/ui/button.tsx -->
+        <button class="btn btn-sm">↑ Bulk Upload</button>
+        <button class="btn btn-sm">↓ Export</button>
+        <button class="btn btn-sm" style="border:none; background:none; font-size:16px;">🌙</button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ──────── SUMMARY STRIP ──────── -->
+      <!-- REUSABLE: Card from src/components/ui/card.tsx -->
+      <div class="dashboard-strip">
+        <div class="stat-card" style="position:relative;">
+          <span class="reuse-badge" title="src/components/time-tracking/summary-cards.tsx">[REUSE] SummaryCards</span>
+          <div class="stat-label"><div class="stat-icon"></div> TODAY</div>
+          <div class="stat-value">4h 32m</div>
+          <div class="stat-sub">3 entries logged</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label"><div class="stat-icon"></div> THIS WEEK</div>
+          <div class="stat-value">18h 15m</div>
+          <div class="stat-sub">Mon – Sun</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label"><div class="stat-icon"></div> POMODOROS TODAY</div>
+          <div class="stat-value">6</div>
+          <div class="stat-sub">~150 min focused</div>
+        </div>
+      </div>
+
+      <!-- ──────── ONGOING TASKS (conditional) ──────── -->
+      <!-- REUSABLE: OngoingTaskCard from src/components/time-tracking/ongoing-task-card.tsx -->
+      <div class="ongoing-strip" style="position:relative;">
+        <span class="reuse-badge" title="src/components/time-tracking/ongoing-task-card.tsx">[REUSE] OngoingTaskCard</span>
+        <div class="ongoing-header">
+          <div class="title"><span class="pulse-dot"></span> Ongoing Tasks (2)</div>
+        </div>
+        <div class="ongoing-task-row">
+          <div class="task-badges">
+            <span class="badge badge-filled">Frontend Dev</span>
+            <span class="badge">Deep Work</span>
+            <span style="font-size:11px;color:#999;">Started 9:30 am</span>
+          </div>
+          <div class="task-elapsed">2h 15m</div>
+          <button class="btn btn-sm btn-primary">✓ Complete</button>
+        </div>
+        <div class="ongoing-task-row">
+          <div class="task-badges">
+            <span class="badge badge-filled">Writing</span>
+            <span class="badge">Creative</span>
+            <span style="font-size:11px;color:#999;">Started 11:45 am</span>
+          </div>
+          <div class="task-elapsed">45m</div>
+          <button class="btn btn-sm btn-primary">✓ Complete</button>
+        </div>
+      </div>
+
+      <!-- ──────── TWO-COLUMN LAYOUT: Quick Entry + Pomodoro ──────── -->
+      <div class="two-col">
+
+        <!-- LEFT: Quick Entry Form -->
+        <!-- REUSABLE: QuickEntryBar from src/components/time-tracking/quick-entry-bar.tsx -->
+        <div class="quick-entry-section" style="position:relative;">
+          <span class="new-badge" title="Redesigned: src/components/time-tracking/quick-entry-bar.tsx">[REDESIGN] QuickEntryBar</span>
+          <div class="section-title"><div class="icon"></div> Quick Add Entry</div>
+
+          <!-- Row 1: Date/Time -->
+          <div class="datetime-row">
+            <div class="form-group">
+              <label>Start</label>
+              <div class="datetime-input-group">
+                <input type="text" value="Feb 17, 10:30 am" />
+                <button class="picker-btn">📅</button>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>End <span style="color:#bbb; font-size:9px;">(optional — leave empty for ongoing)</span></label>
+              <div class="datetime-input-group">
+                <input type="text" placeholder="Pick end time..." />
+                <button class="picker-btn">📅</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Row 2: Area, Type, Pomodoros -->
+          <div style="display:grid; grid-template-columns:1fr 1fr auto; gap:12px; margin-bottom:12px;">
+            <div class="form-group">
+              <label>Work Area *</label>
+              <select><option>Select area...</option><option>Frontend Dev</option><option>Writing</option><option>Design</option></select>
+            </div>
+            <div class="form-group">
+              <label>Work Type *</label>
+              <select><option>Select type...</option><option>Deep Work</option><option>Meetings</option><option>Creative</option></select>
+            </div>
+            <div class="form-group">
+              <label># Pom.</label>
+              <input type="number" value="0" style="width:60px; text-align:center;" />
+            </div>
+          </div>
+
+          <!-- Row 3: Comments + Submit -->
+          <div class="comments-full">
+            <div class="form-group">
+              <label>Comments</label>
+              <input type="text" placeholder="What did you work on?" />
+            </div>
+            <button class="btn btn-primary" style="height:34px;">+ Add Entry</button>
+          </div>
+        </div>
+
+        <!-- RIGHT: Pomodoro Timer (compact) -->
+        <!-- REUSABLE: PomodoroTimer from src/components/time-tracking/pomodoro-timer.tsx -->
+        <div class="pomodoro-panel" style="position:relative;">
+          <span class="reuse-badge" title="src/components/time-tracking/pomodoro-timer.tsx">[REUSE] PomodoroTimer</span>
+
+          <div class="section-title" style="justify-content:space-between;">
+            <span style="display:flex;align-items:center;gap:8px;"><div class="icon"></div> Pomodoro Timer</span>
+            <span style="font-size:11px;color:#999;cursor:pointer;">⚙️</span>
+          </div>
+
+          <div class="timer-mode-tabs">
+            <button class="mode-tab active">Focus</button>
+            <button class="mode-tab">Short Break</button>
+            <button class="mode-tab">Long Break</button>
+          </div>
+
+          <div class="timer-display">
+            <div class="timer-digits">25:00</div>
+            <div class="timer-progress">
+              <div class="timer-progress-fill"></div>
+            </div>
+          </div>
+
+          <div class="timer-controls">
+            <button class="timer-btn">↺</button>
+            <button class="timer-btn primary">▶ START</button>
+            <button class="timer-btn">■</button>
+          </div>
+
+          <!-- Link to ongoing task -->
+          <div style="margin-top:16px; padding:10px 12px; border:1px dashed #ccc; border-radius:6px; font-size:11px; color:#999; text-align:center;">
+            🔗 Link to ongoing task: <strong style="color:#666;">Frontend Dev</strong> • Deep Work
+          </div>
+
+          <!-- Completed count -->
+          <div style="text-align:center; margin-top:12px; font-size:11px; color:#999;">
+            🍅 6 pomodoros completed today
+          </div>
+        </div>
+      </div>
+
+      <!-- ──────── RECENT ENTRIES TABLE ──────── -->
+      <!-- REUSABLE: TimeEntriesTable from src/components/time-tracking/time-entries-table.tsx -->
+      <div class="entries-section" style="position:relative;">
+        <span class="reuse-badge" title="src/components/time-tracking/time-entries-table.tsx">[REUSE] TimeEntriesTable</span>
+        <div class="entries-header">
+          <h3>Recent Entries</h3>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <span style="font-size:11px; color:#999;">Showing latest 10</span>
+            <a href="/history" style="font-size:11px; color:#666; text-decoration:underline;">View all →</a>
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Start ↕</th>
+              <th>End ↕</th>
+              <th>Work Area ↕</th>
+              <th>Type ↕</th>
+              <th style="text-align:center">🍅</th>
+              <th>Comments</th>
+              <th>Duration ↕</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="font-weight:600;">Feb 17, 10:30 am</td>
+              <td><span class="badge" style="color:#666; background:#f0f0f0;">● Ongoing</span></td>
+              <td><span class="badge badge-filled">Frontend Dev</span></td>
+              <td><span class="badge">Deep Work</span></td>
+              <td style="text-align:center">2</td>
+              <td>Working on dashboard redesign</td>
+              <td style="font-weight:bold;">—</td>
+              <td>🗑</td>
+            </tr>
+            <tr>
+              <td style="font-weight:600;">Feb 17, 8:00 am</td>
+              <td style="font-weight:600;">Feb 17, 10:15 am</td>
+              <td><span class="badge badge-filled">Writing</span></td>
+              <td><span class="badge">Creative</span></td>
+              <td style="text-align:center">4</td>
+              <td>Draft chapter 3</td>
+              <td style="font-weight:bold;">2h 15m</td>
+              <td>🗑</td>
+            </tr>
+            <tr>
+              <td style="font-weight:600;">Feb 16, 2:00 pm</td>
+              <td style="font-weight:600;">Feb 16, 4:30 pm</td>
+              <td><span class="badge badge-filled">Design</span></td>
+              <td><span class="badge">Meetings</span></td>
+              <td style="text-align:center">0</td>
+              <td>Client review call</td>
+              <td style="font-weight:bold;">2h 30m</td>
+              <td>🗑</td>
+            </tr>
+            <tr>
+              <td style="font-weight:600;">Feb 16, 9:00 am</td>
+              <td style="font-weight:600;">Feb 16, 12:00 pm</td>
+              <td><span class="badge badge-filled">Frontend Dev</span></td>
+              <td><span class="badge">Deep Work</span></td>
+              <td style="text-align:center">6</td>
+              <td>Bug fixes and testing</td>
+              <td style="font-weight:bold;">3h 0m</td>
+              <td>🗑</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="table-footer">
+          <span>💡 Click any cell to edit inline</span>
+          <strong>Total: 7h 45m</strong>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</body>
+</html>

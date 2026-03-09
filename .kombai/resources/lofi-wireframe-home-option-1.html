@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Option 1: Dashboard Overview — Conservative</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Comic Sans MS', 'Chalkboard SE', cursive;
+    background: #fff;
+    color: #333;
+    padding: 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  h1 { font-size: 20px; margin-bottom: 4px; }
+  h2 { font-size: 16px; margin-bottom: 12px; color: #333; }
+  h3 { font-size: 14px; margin-bottom: 8px; color: #555; }
+  p { font-size: 13px; color: #666; line-height: 1.5; }
+  .option-header {
+    background: #f5f5f5;
+    border: 2px solid #ccc;
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-bottom: 24px;
+  }
+  .option-header h1 { font-size: 18px; color: #333; }
+  .option-header p { font-size: 12px; color: #666; margin-top: 4px; }
+
+  /* Wireframe container simulating sidebar layout */
+  .layout { display: flex; gap: 0; border: 2px solid #999; border-radius: 8px; overflow: hidden; min-height: 700px; }
+  .sidebar-wire {
+    width: 220px;
+    background: #f5f5f5;
+    border-right: 2px solid #ccc;
+    padding: 16px;
+    flex-shrink: 0;
+  }
+  .sidebar-wire .logo { font-size: 14px; font-weight: bold; padding-bottom: 12px; border-bottom: 1px dashed #ccc; margin-bottom: 12px; }
+  .sidebar-wire .nav-item {
+    padding: 8px 10px;
+    margin-bottom: 4px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .sidebar-wire .nav-item.active { background: #ddd; font-weight: bold; }
+  .sidebar-wire .nav-item .icon-box { width: 16px; height: 16px; border: 1.5px solid #666; border-radius: 3px; }
+  .main-content { flex: 1; padding: 24px; background: #fff; overflow-y: auto; }
+
+  /* Greeting section */
+  .greeting { margin-bottom: 24px; }
+  .greeting h2 { font-size: 22px; color: #000; margin-bottom: 4px; }
+  .greeting p { font-size: 13px; color: #999; }
+
+  /* Stat cards row */
+  .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+  .stat-card {
+    border: 2px solid #ccc;
+    border-radius: 8px;
+    padding: 16px;
+    background: #fafafa;
+    position: relative;
+  }
+  .stat-card .label { font-size: 11px; color: #999; text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat-card .value { font-size: 24px; font-weight: bold; margin-top: 6px; }
+  .stat-card .trend { font-size: 11px; margin-top: 4px; color: #666; }
+  .stat-card .icon-placeholder { position: absolute; top: 14px; right: 14px; width: 32px; height: 32px; border-radius: 6px; background: #e5e5e5; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+
+  /* Two column layout */
+  .two-col { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-bottom: 24px; }
+  .section-card {
+    border: 2px solid #ccc;
+    border-radius: 8px;
+    padding: 16px;
+    background: #fafafa;
+    position: relative;
+  }
+  .section-card .section-title {
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px dashed #ddd;
+  }
+
+  /* Chart placeholder */
+  .chart-placeholder {
+    height: 180px;
+    border: 2px dashed #ccc;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f9f9f9;
+    color: #999;
+    font-size: 13px;
+  }
+
+  /* Quick action buttons */
+  .quick-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .action-btn {
+    border: 2px solid #999;
+    border-radius: 6px;
+    padding: 10px 16px;
+    font-size: 13px;
+    background: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: inherit;
+  }
+  .action-btn.primary { background: #333; color: #fff; border-color: #333; }
+
+  /* Recent entries table */
+  .table-wire { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .table-wire th { text-align: left; padding: 8px 10px; border-bottom: 2px solid #ccc; color: #999; font-size: 11px; text-transform: uppercase; }
+  .table-wire td { padding: 8px 10px; border-bottom: 1px solid #eee; }
+  .table-wire tr:hover { background: #f5f5f5; }
+
+  /* Activity list */
+  .activity-item {
+    padding: 10px 0;
+    border-bottom: 1px dashed #e5e5e5;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+  }
+  .activity-dot { width: 8px; height: 8px; border-radius: 50%; background: #999; display: inline-block; margin-right: 8px; }
+
+  /* Badge */
+  .reuse-badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #4CAF50;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-family: Arial, sans-serif;
+    font-weight: bold;
+    z-index: 10;
+    white-space: nowrap;
+  }
+  .new-badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #FF9800;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-family: Arial, sans-serif;
+    font-weight: bold;
+    z-index: 10;
+    white-space: nowrap;
+  }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .sidebar-wire { display: none; }
+    .stat-row { grid-template-columns: repeat(2, 1fr); }
+    .two-col { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 600px) {
+    .stat-row { grid-template-columns: 1fr; }
+    body { padding: 12px; }
+  }
+
+  /* Progress bar */
+  .progress-track { height: 8px; background: #e5e5e5; border-radius: 4px; margin-top: 8px; }
+  .progress-fill { height: 100%; background: #999; border-radius: 4px; width: 65%; }
+</style>
+</head>
+<body>
+
+<div class="option-header">
+  <h1>Option 1: Dashboard Overview — Conservative</h1>
+  <p>Traditional dashboard layout reusing existing StatCard and SummaryCards. Familiar pattern with greeting, stats row, chart + quick actions, and recent entries table. Minimal new component development required.</p>
+</div>
+
+<div class="layout">
+  <!-- Sidebar (existing) -->
+  <!-- REUSABLE: Sidebar from src/components/ui/sidebar.tsx -->
+  <div class="sidebar-wire" style="position: relative;">
+    <span class="reuse-badge" title="src/components/ui/sidebar.tsx">[REUSE] Sidebar</span>
+    <div class="logo">⏱ Habit & Time Tracker</div>
+    <div class="nav-item active"><div class="icon-box"></div> Home</div>
+    <div class="nav-item"><div class="icon-box"></div> Track Time</div>
+    <div class="nav-item"><div class="icon-box"></div> History</div>
+    <div class="nav-item"><div class="icon-box"></div> Configure</div>
+    <div class="nav-item"><div class="icon-box"></div> Analytics</div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+
+    <!-- Greeting -->
+    <!-- NEW COMPONENT: GreetingHeader (to be created at src/components/dashboard/greeting-header.tsx) -->
+    <div class="greeting" style="position: relative;">
+      <span class="new-badge" title="src/components/dashboard/greeting-header.tsx">[NEW] GreetingHeader</span>
+      <h2>Good morning, Dipanjan 👋</h2>
+      <p>Tuesday, February 17, 2026 — You've logged 3h 45m today</p>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="stat-row">
+      <!-- REUSABLE: StatCard from src/components/analytics/stat-card.tsx -->
+      <div class="stat-card" style="position: relative;">
+        <span class="reuse-badge" title="src/components/analytics/stat-card.tsx">[REUSE] StatCard</span>
+        <div class="icon-placeholder">⏱</div>
+        <div class="label">Today's Time</div>
+        <div class="value">3h 45m</div>
+        <div class="trend">↑ 12.5% vs yesterday</div>
+      </div>
+      <div class="stat-card" style="position: relative;">
+        <span class="reuse-badge" title="src/components/analytics/stat-card.tsx">[REUSE] StatCard</span>
+        <div class="icon-placeholder">📅</div>
+        <div class="label">This Week</div>
+        <div class="value">18h 20m</div>
+        <div class="trend">↑ 8.2% vs last week</div>
+      </div>
+      <div class="stat-card" style="position: relative;">
+        <span class="reuse-badge" title="src/components/analytics/stat-card.tsx">[REUSE] StatCard</span>
+        <div class="icon-placeholder">🍅</div>
+        <div class="label">Pomodoros Today</div>
+        <div class="value">6</div>
+        <div class="trend">↑ 2 more than avg</div>
+      </div>
+      <div class="stat-card" style="position: relative;">
+        <span class="reuse-badge" title="src/components/analytics/stat-card.tsx">[REUSE] StatCard</span>
+        <div class="icon-placeholder">🔥</div>
+        <div class="label">Streak</div>
+        <div class="value">14 days</div>
+        <div class="trend">Personal best!</div>
+      </div>
+    </div>
+
+    <!-- Two Column Section -->
+    <div class="two-col">
+      <!-- Left: Weekly Chart -->
+      <!-- REUSABLE: ChartContainer from src/components/ui/chart.tsx -->
+      <div class="section-card" style="position: relative;">
+        <span class="reuse-badge" title="src/components/ui/chart.tsx">[REUSE] ChartContainer</span>
+        <div class="section-title">Weekly Activity</div>
+        <div class="chart-placeholder">
+          [BarChart: Mon 2.5h | Tue 3.7h | Wed — | Thu — | Fri — | Sat — | Sun —]
+        </div>
+      </div>
+
+      <!-- Right: Quick Actions -->
+      <!-- NEW COMPONENT: QuickActionsPanel (to be created at src/components/dashboard/quick-actions-panel.tsx) -->
+      <div class="section-card" style="position: relative;">
+        <span class="new-badge" title="src/components/dashboard/quick-actions-panel.tsx">[NEW] QuickActionsPanel</span>
+        <div class="section-title">Quick Actions</div>
+        <div class="quick-actions" style="flex-direction: column;">
+          <button class="action-btn primary">🍅  Start Pomodoro</button>
+          <button class="action-btn">⏱  Quick Time Entry</button>
+          <button class="action-btn">📊  View Analytics</button>
+          <button class="action-btn">📤  Export Data</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Entries Table -->
+    <!-- REUSABLE: Table from src/components/ui/table.tsx -->
+    <div class="section-card" style="position: relative;">
+      <span class="reuse-badge" title="src/components/time-tracking/time-entries-table.tsx">[REUSE] TimeEntriesTable</span>
+      <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
+        Recent Entries
+        <span style="font-size: 12px; color: #999; font-weight: normal; cursor: pointer;">View All →</span>
+      </div>
+      <table class="table-wire">
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Work Area</th>
+            <th>Type</th>
+            <th>Duration</th>
+            <th>Pomodoros</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>09:00 – 10:30</td>
+            <td>Project Alpha</td>
+            <td>Deep Work</td>
+            <td>1h 30m</td>
+            <td>🍅🍅🍅</td>
+          </tr>
+          <tr>
+            <td>10:45 – 11:30</td>
+            <td>Learning</td>
+            <td>Reading</td>
+            <td>0h 45m</td>
+            <td>🍅</td>
+          </tr>
+          <tr>
+            <td>13:00 – 14:30</td>
+            <td>Project Beta</td>
+            <td>Meetings</td>
+            <td>1h 30m</td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td style="color: #999;">Yesterday</td>
+            <td>Admin</td>
+            <td>Planning</td>
+            <td>2h 00m</td>
+            <td>🍅🍅🍅🍅</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<div style="margin-top: 20px; padding: 12px; background: #f9f9f9; border: 1px solid #e5e5e5; border-radius: 6px; font-family: Arial, sans-serif; font-size: 12px; color: #666;">
+  <strong>Component Summary:</strong> 4 reused (Sidebar, StatCard ×4, ChartContainer, TimeEntriesTable) · 2 new (GreetingHeader, QuickActionsPanel)<br>
+  <strong>Responsive:</strong> Sidebar collapses on mobile; stat grid → 2-col → 1-col; two-col section stacks vertically<br>
+  <strong>Micro-interactions:</strong> Stat card hover lift, streak badge pulse animation, chart bar hover tooltips
+</div>
+
+</body>
+</html>

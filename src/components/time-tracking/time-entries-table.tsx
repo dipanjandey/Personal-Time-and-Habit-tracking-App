@@ -22,7 +22,8 @@ import { PomodoroDetailsDialog } from '@/components/time-tracking/pomodoro-detai
 import { useTimeTrackingStore } from '@/store/time-tracking-store'
 import { useConfigStore } from '@/store/config-store'
 import { calculateDuration, formatDuration, getTodayDate } from '@/lib/time-utils'
-import type { TimeEntry } from '@/types/time-tracking'
+import type { TimeEntry, Priority } from '@/types/time-tracking'
+import { PRIORITY_OPTIONS } from '@/types/time-tracking'
 
 // Helper functions for date/time formatting and validation
 const formatDateTimeForDisplay = (datetime: string, fallbackDate?: string): string => {
@@ -233,6 +234,8 @@ export function TimeEntriesTable({
     setSelectedWorkArea,
     selectedWorkType,
     setSelectedWorkType,
+    selectedPriority,
+    setSelectedPriority,
     isSearchOpen,
     toggleSearch,
     clearFilters,
@@ -586,6 +589,55 @@ export function TimeEntriesTable({
           return row.getValue(id) === value
         },
       }),
+      columnHelper.accessor('priority', {
+        header: ({ column }) => <SortableHeader column={column}>Priority</SortableHeader>,
+        size: 200,
+        enableSorting: true,
+        cell: ({ row, getValue }) => {
+          const value = getValue()
+          const isEditingCell = isEditing(row.original.id, 'priority')
+
+          if (isEditingCell) {
+            return (
+              <div onClick={(e) => e.stopPropagation()}>
+                <Select
+                  value={editingValue ?? value ?? ''}
+                  onValueChange={(newValue) => {
+                    const finalValue = newValue === '__none__' ? null : newValue
+                    setEditingValue(finalValue)
+                    editingValueRef.current = finalValue
+                    handleSaveEdit(row.original.id, 'priority', finalValue)
+                  }}
+                >
+                  <SelectTrigger className="w-full text-xs">
+                    <SelectValue placeholder="Select priority..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">No priority</SelectItem>
+                    {PRIORITY_OPTIONS.map((opt) => (
+                      <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )
+          }
+
+          return (
+            <div onClick={() => handleStartEdit(row.original.id, 'priority', value)} className="cursor-pointer min-h-[24px]">
+              {value ? (
+                <Badge variant="outline" className="text-xs">{value}</Badge>
+              ) : (
+                <span className="text-muted-foreground text-xs">—</span>
+              )}
+            </div>
+          )
+        },
+        filterFn: (row, id, value) => {
+          if (!value || value === 'all') return true
+          return row.getValue(id) === value
+        },
+      }),
       columnHelper.accessor('pomodoros', {
         header: ({ column }) => <SortableHeader column={column}>🍅</SortableHeader>,
         size: 100,
@@ -707,6 +759,7 @@ export function TimeEntriesTable({
     return (
       entry.workArea.toLowerCase().includes(searchLower) ||
       entry.workType.toLowerCase().includes(searchLower) ||
+      (entry.priority?.toLowerCase().includes(searchLower) ?? false) ||
       entry.comments.toLowerCase().includes(searchLower)
     )
   }
@@ -740,8 +793,11 @@ export function TimeEntriesTable({
     if (selectedWorkType && selectedWorkType !== 'all') {
       filters.push({ id: 'workType', value: selectedWorkType })
     }
+    if (selectedPriority && selectedPriority !== 'all') {
+      filters.push({ id: 'priority', value: selectedPriority })
+    }
     setColumnFilters(filters)
-  }, [selectedWorkArea, selectedWorkType])
+  }, [selectedWorkArea, selectedWorkType, selectedPriority])
 
   const totalDuration = table.getFilteredRowModel().rows.reduce((sum, row) => sum + row.original.duration, 0)
 
@@ -823,6 +879,20 @@ export function TimeEntriesTable({
               {workTypes.map((type) => (
                 <SelectItem key={type.id} value={type.name}>
                   {type.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={selectedPriority || 'all'} onValueChange={setSelectedPriority}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="All Priorities" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Priorities</SelectItem>
+              {PRIORITY_OPTIONS.map((opt) => (
+                <SelectItem key={opt} value={opt}>
+                  {opt}
                 </SelectItem>
               ))}
             </SelectContent>
