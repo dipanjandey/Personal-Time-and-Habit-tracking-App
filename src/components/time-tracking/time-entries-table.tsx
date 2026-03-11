@@ -257,6 +257,7 @@ export function TimeEntriesTable({
   const [editingValue, setEditingValue] = useState<any>(null)
   const [editingError, setEditingError] = useState<string>('')
   const [pageSize, setPageSize] = useState(10)
+  const [pageIndex, setPageIndex] = useState(0)
   
   // Pomodoro details dialog state
   const [pomodoroDetailsOpen, setPomodoroDetailsOpen] = useState(false)
@@ -774,12 +775,21 @@ export function TimeEntriesTable({
     ...(showPagination && { getPaginationRowModel: getPaginationRowModel() }),
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
+    ...(showPagination && {
+      onPaginationChange: (updater: any) => {
+        const newPagination = typeof updater === 'function'
+          ? updater({ pageIndex, pageSize })
+          : updater
+        setPageIndex(newPagination.pageIndex)
+        setPageSize(newPagination.pageSize)
+      },
+    }),
     globalFilterFn,
     state: {
       sorting,
       columnFilters,
       globalFilter: searchQuery,
-      ...(showPagination && { pagination: { pageIndex: 0, pageSize } }),
+      ...(showPagination && { pagination: { pageIndex, pageSize } }),
     },
     onGlobalFilterChange: setSearchQuery,
   })
@@ -964,7 +974,7 @@ export function TimeEntriesTable({
                 value={pageSize.toString()} 
                 onValueChange={(val) => {
                   setPageSize(Number(val))
-                  table.setPageSize(Number(val))
+                  setPageIndex(0)
                 }}
               >
                 <SelectTrigger className="w-[100px] h-8">
