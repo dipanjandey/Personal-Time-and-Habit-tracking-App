@@ -1,6 +1,5 @@
 'use client'
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useTimeTrackingStore } from '@/store/time-tracking-store'
 import { formatDuration, getTodayDate, getWeekStartDate } from '@/lib/time-utils'
 
@@ -13,45 +12,40 @@ export function SummaryCards() {
   const todayTime = todayEntries.reduce((sum, e) => sum + e.duration, 0)
   const todayPomodoros = todayEntries.reduce((sum, e) => sum + e.pomodoros, 0)
   
-  // Calculate week time from Monday onwards
   const weekStart = getWeekStartDate()
   const weekEntries = entries.filter((e) => e.date >= weekStart)
   const weekTime = weekEntries.reduce((sum, e) => sum + e.duration, 0)
   
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
-            THIS WEEK
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-3xl font-bold">{formatDuration(weekTime)}</div>
-        </CardContent>
-      </Card>
+    <div className="-mx-4 md:-mx-6 lg:-mx-8 mb-6 border-y border-border">
+      <div className="grid grid-cols-3 divide-x divide-border">
+        <div className="px-4 md:px-6 lg:px-8 py-5">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1.5">
+            This Week
+          </p>
+          <p className="text-4xl md:text-5xl font-display font-extrabold tabular-nums leading-none text-foreground">
+            {formatDuration(weekTime)}
+          </p>
+        </div>
 
-      <Card className="text-center">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
-            TODAY
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-3xl font-bold">{formatDuration(todayTime)}</div>
-        </CardContent>
-      </Card>
-      
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
-            POMODOROS
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-3xl font-bold">{todayPomodoros}</div>
-        </CardContent>
-      </Card>
+        <div className="px-4 md:px-6 lg:px-8 py-5 bg-primary/[0.04]">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary mb-1.5">
+            Today
+          </p>
+          <p className="text-4xl md:text-5xl font-display font-extrabold tabular-nums leading-none text-primary">
+            {formatDuration(todayTime)}
+          </p>
+        </div>
+
+        <div className="px-4 md:px-6 lg:px-8 py-5">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-1.5">
+            Pomodoros
+          </p>
+          <p className="text-4xl md:text-5xl font-display font-extrabold tabular-nums leading-none text-foreground">
+            {todayPomodoros}
+          </p>
+        </div>
+      </div>
     </div>
   )
 }

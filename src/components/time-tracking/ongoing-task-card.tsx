@@ -144,18 +144,24 @@ export function OngoingTaskCard({
       "overflow-hidden transition-all",
       isSelected && "ring-2 ring-primary"
     )}>
-      <div className="h-1 bg-green-500" />
-      <CardContent className="p-4 pt-2">
-        <div className="flex items-center justify-between gap-3 mb-4">
-          <div className="flex items-center gap-1.5">
-            <Circle className="w-2.5 h-2.5 fill-green-500 text-green-500 animate-pulse" />
-            <span className="text-xs font-medium text-green-600 uppercase">Ongoing</span>
+      <div className="h-[3px] bg-green-500" />
+      <CardContent className="p-4 pt-3">
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div className="flex items-center gap-2">
+            <Circle className="w-2 h-2 fill-green-500 text-green-500 animate-pulse flex-shrink-0 mt-0.5" />
+            <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-green-600">Live</span>
           </div>
           
-          <CompleteTaskButton
-            onComplete={handleComplete}
-            className="flex-shrink-0"
-          />
+          <div className="flex items-center gap-3">
+            <div className="text-right">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground leading-none mb-0.5">Elapsed</p>
+              <p className="text-2xl font-display font-extrabold tabular-nums leading-none text-foreground">{elapsed}</p>
+            </div>
+            <CompleteTaskButton
+              onComplete={handleComplete}
+              className="flex-shrink-0"
+            />
+          </div>
         </div>
         
         <div className="flex-1 min-w-0">
@@ -170,19 +176,14 @@ export function OngoingTaskCard({
             )}
           </div>
           
-          <div className="flex flex-col md:flex-row md:items-center md:gap-4 gap-1 text-sm text-muted-foreground mb-2">
-            <div className="flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5" />
-              <span>Started: {formatStartTime(task.startTime, task.date)}</span>
-            </div>
-            <div className="font-medium text-foreground">
-              ⏱️ {elapsed}
-            </div>
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1.5">
+            <Clock className="w-3 h-3" />
+            <span>Started {formatStartTime(task.startTime, task.date)}</span>
           </div>
           
           {task.comments && (
             <p className="text-sm text-muted-foreground line-clamp-2">
-              📝 {task.comments}
+              {task.comments}
             </p>
           )}
         </div>

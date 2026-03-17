@@ -73,9 +73,12 @@ export default function DashboardLayout({
     <SidebarProvider>
       <Sidebar>
         <SidebarHeader className="border-b p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 font-bold text-lg">
-              <span>Habit & Time Tracker</span>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex flex-col leading-none">
+              <span className="text-[9px] font-semibold uppercase tracking-[0.22em] text-primary mb-0.5">Habit &amp;</span>
+              <span className="font-display font-extrabold text-xl uppercase tracking-tight leading-none text-foreground">
+                Time Tracker
+              </span>
             </div>
             <ThemeToggle />
           </div>

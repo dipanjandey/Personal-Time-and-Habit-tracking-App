@@ -39,21 +39,37 @@ export default function TrackTimePage() {
     }
   }, [loadEntries, loadWorkAreas, loadWorkTypes, initializeRealtimeSubscription])
 
+  const today = new Date()
+  const dateLabel = today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
+
   return (
-    <div className="p-4 md:p-6 lg:p-8 overflow-x-hidden">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 md:mb-8 pb-4 border-b">
-        <h1 className="text-3xl font-bold">Time Tracking</h1>
-        <div className="flex gap-3">
-          <Button variant="outline" onClick={() => setBulkUploadOpen(true)}>
-            <Upload className="w-4 h-4 mr-2" />
-            Bulk Upload
-          </Button>
-          <Button variant="outline" onClick={() => exportToCSV(entries)}>
-            <Download className="w-4 h-4 mr-2" />
-            Export
-          </Button>
+    <div className="overflow-x-hidden">
+      {/* Dramatic page header */}
+      <div className="px-4 md:px-6 lg:px-8 pt-6 md:pt-8 pb-5 border-b-2 border-primary">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-primary mb-1.5">
+              {dateLabel}
+            </p>
+            <h1 className="text-5xl md:text-7xl font-display font-extrabold uppercase tracking-tight leading-[0.9] text-foreground">
+              Time Tracking
+            </h1>
+          </div>
+          <div className="flex gap-2 pb-1">
+            <Button variant="outline" size="sm" onClick={() => setBulkUploadOpen(true)}>
+              <Upload className="w-3.5 h-3.5 mr-1.5" />
+              <span className="hidden sm:inline">Bulk Upload</span>
+              <span className="sm:hidden">Upload</span>
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => exportToCSV(entries)}>
+              <Download className="w-3.5 h-3.5 mr-1.5" />
+              Export
+            </Button>
+          </div>
         </div>
       </div>
+
+      <div className="px-4 md:px-6 lg:px-8 pt-6">
 
       {/* Main Tabs: Add an Entry, Pomodoro */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
@@ -73,9 +89,9 @@ export default function TrackTimePage() {
           {/* Ongoing Tasks Section */}
           {ongoingTasks.length > 0 && (
             <div className="space-y-3">
-              <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                Ongoing Tasks ({ongoingTasks.length})
+              <h3 className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                Live · {ongoingTasks.length} task{ongoingTasks.length !== 1 ? 's' : ''}
               </h3>
               <div className="grid gap-3 md:grid-cols-2">
                 {ongoingTasks.map((task) => (
@@ -144,6 +160,7 @@ export default function TrackTimePage() {
         open={bulkUploadOpen}
         onOpenChange={setBulkUploadOpen}
       />
+      </div>
     </div>
   )
 }
