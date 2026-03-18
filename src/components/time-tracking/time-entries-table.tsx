@@ -311,6 +311,12 @@ export function TimeEntriesTable({
       
       const updates: Partial<TimeEntry> = { [columnId]: parseResult.datetime }
       
+      // When startTime is edited, also update the date field to match
+      if (columnId === 'startTime' && parseResult.datetime!.includes(' ')) {
+        const [datePart] = parseResult.datetime!.split(' ')
+        updates.date = datePart
+      }
+      
       // Recalculate duration
       const newStartTime = columnId === 'startTime' ? parseResult.datetime : entry.startTime
       const newEndTime = columnId === 'endTime' ? parseResult.datetime : entry.endTime
@@ -334,8 +340,8 @@ export function TimeEntriesTable({
       setEditingValue(null)
       setEditingError('')
     } else {
-      // Non-datetime fields
-      if (finalValue !== null && finalValue !== undefined) {
+      // Non-datetime fields — allow null for nullable fields like priority
+      if (finalValue !== undefined) {
         updateEntry(rowId, { [columnId]: finalValue })
       }
       setEditingCell(null)

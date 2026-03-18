@@ -43,7 +43,7 @@ export default function TrackTimePage() {
   const dateLabel = today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
 
   return (
-    <div className="overflow-x-hidden">
+    <div>
       {/* Dramatic page header */}
       <div className="px-4 md:px-6 lg:px-8 pt-6 md:pt-8 pb-5 border-b-2 border-primary">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">

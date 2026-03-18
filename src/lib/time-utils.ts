@@ -39,6 +39,19 @@ export function getTodayDate(): string {
   return `${year}-${month}-${day}`
 }
 
+/**
+ * Get the effective date for an entry.
+ * If startTime contains a date (format "YYYY-MM-DD HH:mm"), extract it.
+ * Otherwise, fall back to the entry's date field.
+ */
+export function getEntryEffectiveDate(entry: { startTime: string; date: string }): string {
+  if (entry.startTime && entry.startTime.includes(' ')) {
+    const [datePart] = entry.startTime.split(' ')
+    return datePart
+  }
+  return entry.date
+}
+
 export function getWeekStartDate(): string {
   const today = new Date()
   const dayOfWeek = today.getDay() // 0 = Sunday, 1 = Monday, ..., 6 = Saturday

@@ -1,19 +1,19 @@
 'use client'
 
 import { useTimeTrackingStore } from '@/store/time-tracking-store'
-import { formatDuration, getTodayDate, getWeekStartDate } from '@/lib/time-utils'
+import { formatDuration, getTodayDate, getWeekStartDate, getEntryEffectiveDate } from '@/lib/time-utils'
 
 export function SummaryCards() {
   const { entries } = useTimeTrackingStore()
   
   const today = getTodayDate()
-  const todayEntries = entries.filter((e) => e.date === today)
+  const todayEntries = entries.filter((e) => getEntryEffectiveDate(e) === today)
   
   const todayTime = todayEntries.reduce((sum, e) => sum + e.duration, 0)
   const todayPomodoros = todayEntries.reduce((sum, e) => sum + e.pomodoros, 0)
   
   const weekStart = getWeekStartDate()
-  const weekEntries = entries.filter((e) => e.date >= weekStart)
+  const weekEntries = entries.filter((e) => getEntryEffectiveDate(e) >= weekStart)
   const weekTime = weekEntries.reduce((sum, e) => sum + e.duration, 0)
   
   return (

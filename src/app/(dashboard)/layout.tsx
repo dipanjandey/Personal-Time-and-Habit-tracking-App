@@ -70,7 +70,7 @@ export default function DashboardLayout({
   }
 
   return (
-    <SidebarProvider>
+    <SidebarProvider className="h-svh overflow-hidden">
       <Sidebar>
         <SidebarHeader className="border-b p-4">
           <div className="flex items-center justify-between gap-2">
@@ -135,7 +135,7 @@ export default function DashboardLayout({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      <SidebarInset>
+      <SidebarInset className="overflow-y-auto">
         <main className="flex-1">
           {children}
         </main>
